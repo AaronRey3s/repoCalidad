@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Proyecto')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor">
+    <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
+    <div th:if="${param.reporteSinDatos}" class="alerta alerta-error" role="alert">
+        No existen registros suficientes para emitir el reporte: el proyecto no tiene mediciones ni técnicas SQA
+        registradas en el periodo. Se canceló la exportación (CU06 · flujo 2a).
+    </div>
+
+    <p class="migas"><a th:href="@{/proyectos}">Proyectos</a> / <span th:text="${proyecto.nombre()}">Proyecto</span></p>
+
+    <div class="encabezado-pagina">
+        <div>
+            <h1 th:text="${proyecto.nombre()}">Proyecto</h1>
+            <p class="sutil">
+                <span th:text="${proyecto.periodoDescripcion()}">Periodo</span> ·
+                <span class="etiqueta" th:classappend="${proyecto.activo()} ? 'etiqueta-activo' : 'etiqueta-inactivo'"
+                      th:text="${proyecto.activo()} ? 'Activo' : 'Inactivo'">Activo</span>
+            </p>
+        </div>
+        <div class="botones">
+            <a class="boton boton-primario" th:href="@{/dashboard(proyectoId=${proyecto.id()})}">Ver dashboard</a>
+            <a sec:authorize="hasAnyRole('LIDER_SQA', 'LIDER_PROYECTO', 'STAKEHOLDER')" class="boton boton-secundario"
+               th:href="@{/proyectos/{id}/reporte.pdf(id=${proyecto.id()})}">Exportar reporte PDF</a>
+            <a sec:authorize="hasRole('LIDER_PROYECTO')" class="boton boton-secundario"
+               th:href="@{/proyectos/{id}/editar(id=${proyecto.id()})}">Editar</a>
+            <form sec:authorize="hasRole('LIDER_PROYECTO')" th:action="@{/proyectos/{id}/activo(id=${proyecto.id()})}"
+                  method="post" class="en-linea">
+                <input type="hidden" name="activo" th:value="${!proyecto.activo()}">
+                <button type="submit" class="boton boton-claro"
+                        th:text="${proyecto.activo()} ? 'Desactivar' : 'Reactivar'">Desactivar</button>
+            </form>
+        </div>
+    </div>
+
+    <section class="tarjeta" th:if="${proyecto.descripcion() != null or proyecto.tecnologias() != null}">
+        <p th:if="${proyecto.descripcion() != null}" th:text="${proyecto.descripcion()}">Descripción</p>
+        <p th:if="${proyecto.tecnologias() != null}"><strong>Tecnologías:</strong>
+            <span th:text="${proyecto.tecnologias()}">Java</span></p>
+    </section>
+
+    <!-- CU02 / CU03: métricas -->
+    <section class="tarjeta" id="metricas">
+        <div class="encabezado-seccion">
+            <h2>Métricas de calidad</h2>
+            <a sec:authorize="hasRole('LIDER_SQA')" th:if="${proyecto.activo()}" class="boton boton-primario boton-chico"
+               th:href="@{/proyectos/{id}/metricas/nueva(id=${proyecto.id()})}">+ Configurar métrica</a>
+        </div>
+        <p th:if="${metricas.isEmpty()}" class="vacio">Sin métricas configuradas. El Líder SQA debe parametrizarlas (CU02).</p>
+        <div class="tabla-desplazable" th:unless="${metricas.isEmpty()}">
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th>Estado</th>
+                    <th>Métrica</th>
+                    <th>Último valor</th>
+                    <th>Umbrales</th>
+                    <th class="acciones">Acciones</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="m : ${metricas}">
+                    <td>
+                        <span class="semaforo" th:classappend="${m.estadoActual.claseCss}"
+                              th:title="${m.estadoActual.etiqueta}"></span>
+                        <span class="sutil chico" th:text="${m.estadoActual.etiqueta}">Óptimo</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/metricas/{id}/mediciones(id=${m.id})}" th:text="${m.nombre}">Cobertura</a>
+                        <div class="sutil chico" th:text="${m.unidad.etiqueta} + ' · ' + ${m.frecuencia.etiqueta}">Porcentaje</div>
+                    </td>
+                    <td th:text="${m.valorActualFormateado()}">—</td>
+                    <td class="rangos">
+                        <span class="rango verde" th:text="${m.rangoVerde()}">≥ 80</span>
+                        <span class="rango amarillo" th:text="${m.rangoAmarillo()}">≥ 60 y &lt; 80</span>
+                        <span class="rango rojo" th:text="${m.rangoRojo()}">&lt; 60</span>
+                    </td>
+                    <td class="acciones">
+                        <a class="boton boton-secundario boton-chico"
+                           th:href="@{/metricas/{id}/mediciones(id=${m.id})}">Mediciones</a>
+                        <form sec:authorize="hasRole('LIDER_SQA')" th:if="${m.ultimoValor == null}"
+                              th:action="@{/metricas/{id}/eliminar(id=${m.id})}" method="post" class="en-linea">
+                            <button type="submit" class="boton boton-peligro boton-chico">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- CU04: técnicas SQA -->
+    <section class="tarjeta" id="tecnicas">
+        <div class="encabezado-seccion">
+            <h2>Técnicas y métodos SQA</h2>
+            <a sec:authorize="hasRole('LIDER_SQA')" th:if="${proyecto.activo()}" class="boton boton-primario boton-chico"
+               th:href="@{/proyectos/{id}/tecnicas/nueva(id=${proyecto.id()})}">+ Asignar técnica</a>
+        </div>
+        <p th:if="${tecnicas.isEmpty()}" class="vacio">Sin técnicas asignadas. El Líder SQA debe planificarlas (RS-06).</p>
+        <div class="tabla-desplazable" th:unless="${tecnicas.isEmpty()}">
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th>Técnica</th>
+                    <th>Categoría</th>
+                    <th>Responsable</th>
+                    <th>Estado</th>
+                    <th>Evidencia</th>
+                    <th class="acciones">Acciones</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${tecnicas}">
+                    <td th:text="${t.nombre}">Revisión por pares</td>
+                    <td th:text="${t.categoria.etiqueta}">Revisión Técnica / Pares</td>
+                    <td th:text="${t.responsable}">sqa</td>
+                    <td><span class="estado-tecnica" th:classappend="${t.estado.claseCss}" th:text="${t.estado.etiqueta}">Pendiente</span></td>
+                    <td class="chico" th:text="${t.evidencia.describir()}">Sin evidencia</td>
+                    <td class="acciones">
+                        <a class="boton boton-secundario boton-chico" th:href="@{/tecnicas/{id}(id=${t.id})}">Ver / actualizar</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>

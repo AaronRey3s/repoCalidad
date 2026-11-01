@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Configurar métrica')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor contenedor-angosto">
+    <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
+
+    <p class="migas"><a th:href="@{/proyectos}">Proyectos</a> /
+        <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" th:text="${proyecto.nombre()}">Proyecto</a> / Nueva métrica</p>
+    <h1>Configurar métrica de calidad</h1>
+    <p class="sutil">CU02 · Define la unidad, la frecuencia y los umbrales del semáforo Verde / Amarillo / Rojo.</p>
+
+    <form th:action="@{/proyectos/{id}/metricas(id=${proyecto.id()})}" th:object="${form}" method="post"
+          class="tarjeta formulario" id="formulario-metrica" novalidate>
+
+        <div th:if="${#fields.hasGlobalErrors()}" class="alerta alerta-error" role="alert">
+            <p th:each="mensaje : ${#fields.globalErrors()}" th:text="${mensaje}">Error</p>
+        </div>
+
+        <div class="campo" th:classappend="${#fields.hasErrors('nombre')} ? 'con-error'">
+            <label for="nombre">Nombre de la métrica *</label>
+            <input type="text" th:field="*{nombre}" maxlength="120" placeholder="Cobertura de código">
+            <p class="error-campo" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}">Error</p>
+        </div>
+
+        <div class="fila-campos">
+            <div class="campo" th:classappend="${#fields.hasErrors('unidad')} ? 'con-error'">
+                <label for="unidad">Unidad de medida *</label>
+                <select th:field="*{unidad}">
+                    <option value="">Selecciona…</option>
+                    <option th:each="u : ${unidades}" th:value="${u}" th:text="${u.etiqueta}">Porcentaje</option>
+                </select>
+                <p class="error-campo" th:if="${#fields.hasErrors('unidad')}" th:errors="*{unidad}">Error</p>
+            </div>
+            <div class="campo" th:classappend="${#fields.hasErrors('frecuencia')} ? 'con-error'">
+                <label for="frecuencia">Frecuencia de medición *</label>
+                <select th:field="*{frecuencia}">
+                    <option value="">Selecciona…</option>
+                    <option th:each="f : ${frecuencias}" th:value="${f}" th:text="${f.etiqueta}">Semanal</option>
+                </select>
+                <p class="error-campo" th:if="${#fields.hasErrors('frecuencia')}" th:errors="*{frecuencia}">Error</p>
+            </div>
+        </div>
+
+        <fieldset class="grupo-campos">
+            <legend>Umbrales de aceptación</legend>
+            <div class="campo" th:classappend="${#fields.hasErrors('sentido')} ? 'con-error'">
+                <label for="sentido">Sentido *</label>
+                <select th:field="*{sentido}">
+                    <option th:each="s : ${sentidos}" th:value="${s}" th:text="${s.etiqueta}">Mayor es mejor</option>
+                </select>
+                <p class="error-campo" th:if="${#fields.hasErrors('sentido')}" th:errors="*{sentido}">Error</p>
+            </div>
+            <div class="fila-campos">
+                <div class="campo" th:classappend="${#fields.hasErrors('limiteOptimo')} ? 'con-error'">
+                    <label for="limiteOptimo">Límite óptimo (verde) *</label>
+                    <input type="number" step="any" th:field="*{limiteOptimo}" placeholder="80">
+                    <p class="error-campo" th:if="${#fields.hasErrors('limiteOptimo')}" th:errors="*{limiteOptimo}">Error</p>
+                </div>
+                <div class="campo" th:classappend="${#fields.hasErrors('limiteCritico')} ? 'con-error'">
+                    <label for="limiteCritico">Límite crítico (rojo) *</label>
+                    <input type="number" step="any" th:field="*{limiteCritico}" placeholder="60">
+                    <p class="error-campo" th:if="${#fields.hasErrors('limiteCritico')}" th:errors="*{limiteCritico}">Error</p>
+                </div>
+            </div>
+            <p class="vista-previa" id="vista-previa-umbrales" aria-live="polite"></p>
+            <p class="sutil chico">Ejemplo “mayor es mejor” con óptimo 80 y crítico 60: Verde ≥ 80 · Amarillo ≥ 60 y &lt; 80 · Rojo &lt; 60.
+                Los rangos siempre quedan continuos y sin solaparse; si los límites se cruzan, el sistema rechaza el registro.</p>
+        </fieldset>
+
+        <div class="botones">
+            <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" class="boton boton-secundario">Cancelar</a>
+            <button type="submit" class="boton boton-primario">Guardar métrica</button>
+        </div>
+    </form>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>

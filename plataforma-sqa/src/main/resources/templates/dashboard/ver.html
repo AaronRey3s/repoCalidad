@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Dashboard de salud SQA')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor">
+    <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
+
+    <div class="encabezado-pagina">
+        <div>
+            <h1>Dashboard de salud SQA</h1>
+            <p class="sutil">CU05 · Semáforo por métrica, tendencia histórica y cumplimiento de técnicas SQA</p>
+        </div>
+        <form th:action="@{/dashboard}" method="get" class="selector-proyecto" th:unless="${grupos.isEmpty()}">
+            <label for="proyectoId">Proyecto y periodo</label>
+            <select id="proyectoId" name="proyectoId" data-autoenviar>
+                <optgroup th:each="grupo : ${grupos}" th:label="${grupo.key}">
+                    <option th:each="p : ${grupo.value}" th:value="${p.id()}" th:text="${p.nombre()}"
+                            th:selected="${p.id() == seleccionado}">Proyecto</option>
+                </optgroup>
+            </select>
+            <button type="submit" class="boton boton-secundario boton-chico">Ver</button>
+        </form>
+    </div>
+
+    <div th:if="${d == null}" class="tarjeta vacio">
+        <p><strong>No hay proyectos registrados todavía.</strong></p>
+        <p class="sutil">Registra un proyecto (CU01) y configura sus métricas (CU02) para ver su estado de salud.</p>
+    </div>
+
+    <th:block th:if="${d != null}">
+        <div class="encabezado-seccion">
+            <h2>
+                <a th:href="@{/proyectos/{id}(id=${d.proyecto().id()})}" th:text="${d.proyecto().nombre()}">Proyecto</a>
+                <small class="sutil" th:text="${d.proyecto().periodoDescripcion()}">Periodo</small>
+            </h2>
+            <a sec:authorize="hasAnyRole('LIDER_SQA', 'LIDER_PROYECTO', 'STAKEHOLDER')" class="boton boton-secundario"
+               th:href="@{/proyectos/{id}/reporte.pdf(id=${d.proyecto().id()})}">Exportar reporte PDF</a>
+        </div>
+
+        <!-- Indicadores globales -->
+        <div class="kpis">
+            <div class="kpi kpi-dictamen" th:classappend="${d.salud().dictamen().claseCss}">
+                <span class="kpi-titulo">Dictamen global</span>
+                <span class="kpi-valor" th:text="${d.salud().dictamen().etiqueta}">Saludable</span>
+                <span class="kpi-pie" th:text="'Índice global: ' + ${d.salud().indiceGlobalTexto()}">Índice</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-titulo">Índice de métricas</span>
+                <span class="kpi-valor" th:text="${d.salud().indiceMetricasTexto()}">80 %</span>
+                <span class="kpi-pie">Verde 100 · Amarillo 50 · Rojo 0</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi-titulo">Técnicas SQA aplicadas</span>
+                <span class="kpi-valor" th:text="${d.tecnicas().porcentajeTexto()}">50 %</span>
+                <progress class="barra-progreso" max="100" th:value="${d.tecnicas().anchoBarra()}"
+                          aria-label="Porcentaje de técnicas SQA aplicadas">0</progress>
+                <span class="kpi-pie"
+                      th:text="${d.tecnicas().aplicadas()} + ' de ' + ${d.tecnicas().total()} + ' en estado Aplicado'">2 de 4</span>
+            </div>
+        </div>
+
+        <!-- CU05 flujo 2a -->
+        <div th:if="${d.sinMediciones()}" class="alerta alerta-aviso">
+            <strong>Sin datos:</strong> este proyecto todavía no tiene mediciones registradas.
+            <span th:if="${d.metricas().isEmpty()}">Empieza configurando sus métricas.</span>
+            <span th:unless="${d.metricas().isEmpty()}">Captura las primeras mediciones para encender el semáforo.</span>
+            <a th:href="@{/proyectos/{id}(id=${d.proyecto().id()})}">Ir al proyecto</a>
+        </div>
+
+        <!-- Semáforo y tendencia por métrica -->
+        <section class="rejilla-tarjetas">
+            <article class="tarjeta tarjeta-metrica" th:each="t : ${tarjetas}">
+                <header class="tarjeta-metrica-encabezado">
+                    <span class="semaforo" th:classappend="${t.indicador().estado().claseCss}"></span>
+                    <div>
+                        <h3><a th:href="@{/metricas/{id}/mediciones(id=${t.indicador().id()})}"
+                               th:text="${t.indicador().nombre()}">Métrica</a></h3>
+                        <span class="sutil chico" th:text="${t.indicador().unidad()} + ' · ' + ${t.indicador().frecuencia()}">Porcentaje</span>
+                    </div>
+                    <div class="valor-metrica">
+                        <strong th:text="${t.indicador().valorActual()}">85 %</strong>
+                        <span class="chico" th:text="${t.indicador().estado().etiqueta}">Óptimo</span>
+                    </div>
+                </header>
+                <p th:if="${t.grafica().vacia()}" class="vacio chico">Sin mediciones · Sin datos</p>
+                <svg th:unless="${t.grafica().vacia()}" class="grafica" viewBox="0 0 320 120" role="img"
+                     th:attr="aria-label='Tendencia de ' + ${t.indicador().nombre()}">
+                    <line class="umbral umbral-optimo" x1="0" x2="320"
+                          th:attr="y1=${t.grafica().yOptimo()},y2=${t.grafica().yOptimo()}"></line>
+                    <line class="umbral umbral-critico" x1="0" x2="320"
+                          th:attr="y1=${t.grafica().yCritico()},y2=${t.grafica().yCritico()}"></line>
+                    <polyline class="serie" th:attr="points=${t.grafica().puntos()}"></polyline>
+                    <circle th:each="mk : ${t.grafica().marcadores()}" r="4"
+                            th:attr="cx=${mk.x()},cy=${mk.y()}" th:class="'punto ' + ${mk.claseCss()}">
+                        <title th:text="${mk.titulo()}">Medición</title>
+                    </circle>
+                    <text class="eje" x="2" y="10" th:text="${t.grafica().etiquetaMaximo()}">100</text>
+                    <text class="eje" x="2" y="118" th:text="${t.grafica().etiquetaMinimo()}">0</text>
+                </svg>
+                <footer class="rangos">
+                    <span class="rango verde" th:text="${t.indicador().rangoVerde()}">≥ 80</span>
+                    <span class="rango amarillo" th:text="${t.indicador().rangoAmarillo()}">≥ 60 y &lt; 80</span>
+                    <span class="rango rojo" th:text="${t.indicador().rangoRojo()}">&lt; 60</span>
+                </footer>
+            </article>
+        </section>
+
+        <!-- Cumplimiento de técnicas -->
+        <section class="tarjeta">
+            <h2>Técnicas SQA por estado</h2>
+            <div class="conteos-tecnicas">
+                <div class="conteo"><span class="estado-tecnica pendiente">Pendiente</span><strong th:text="${d.tecnicas().pendientes()}">0</strong></div>
+                <div class="conteo"><span class="estado-tecnica progreso">En progreso</span><strong th:text="${d.tecnicas().enProgreso()}">0</strong></div>
+                <div class="conteo"><span class="estado-tecnica aplicado">Aplicado</span><strong th:text="${d.tecnicas().aplicadas()}">0</strong></div>
+                <div class="conteo"><span class="estado-tecnica fallido">Fallido</span><strong th:text="${d.tecnicas().fallidas()}">0</strong></div>
+            </div>
+        </section>
+    </th:block>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>
