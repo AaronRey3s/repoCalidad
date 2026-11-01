@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Proyectos')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor">
+    <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
+
+    <div class="encabezado-pagina">
+        <div>
+            <h1>Proyectos por periodo</h1>
+            <p class="sutil">Catálogo de proyectos de software evaluados (CU01)</p>
+        </div>
+        <a sec:authorize="hasRole('LIDER_PROYECTO')" th:href="@{/proyectos/nuevo}"
+           class="boton boton-primario">+ Nuevo proyecto</a>
+    </div>
+
+    <div th:if="${grupos.isEmpty()}" class="tarjeta vacio">
+        <p><strong>Aún no hay proyectos registrados.</strong></p>
+        <p class="sutil" sec:authorize="!hasRole('LIDER_PROYECTO')">
+            El Líder de Proyecto debe registrar el primero.</p>
+    </div>
+
+    <section th:each="grupo : ${grupos}" class="tarjeta grupo-periodo">
+        <h2 th:text="'Periodo: ' + ${grupo.key}">Periodo</h2>
+        <div class="tabla-desplazable">
+            <table class="tabla">
+                <thead>
+                <tr>
+                    <th>Proyecto</th>
+                    <th>Tecnologías</th>
+                    <th>Fechas del periodo</th>
+                    <th>Estado</th>
+                    <th class="acciones">Acciones</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${grupo.value}">
+                    <td>
+                        <a th:href="@{/proyectos/{id}(id=${p.id()})}" th:text="${p.nombre()}">Nombre</a>
+                        <div class="sutil chico" th:if="${p.descripcion() != null}" th:text="${p.descripcion()}">Descripción</div>
+                    </td>
+                    <td th:text="${p.tecnologias() ?: '—'}">Java</td>
+                    <td th:text="${#temporals.format(p.fechaInicio(), 'dd/MM/yyyy')} + ' – ' + ${#temporals.format(p.fechaFin(), 'dd/MM/yyyy')}">01/08/2026 – 15/12/2026</td>
+                    <td>
+                        <span class="etiqueta" th:classappend="${p.activo()} ? 'etiqueta-activo' : 'etiqueta-inactivo'"
+                              th:text="${p.activo()} ? 'Activo' : 'Inactivo'">Activo</span>
+                    </td>
+                    <td class="acciones">
+                        <a class="boton boton-primario boton-chico" th:href="@{/dashboard(proyectoId=${p.id()})}">Dashboard</a>
+                        <a class="boton boton-secundario boton-chico" th:href="@{/proyectos/{id}(id=${p.id()})}">Gestionar</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>

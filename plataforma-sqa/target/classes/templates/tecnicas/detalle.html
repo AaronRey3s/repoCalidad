@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Técnica SQA')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor">
+    <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
+
+    <p class="migas"><a th:href="@{/proyectos}">Proyectos</a> /
+        <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" th:text="${proyecto.nombre()}">Proyecto</a> /
+        <span th:text="${tecnica.nombre}">Técnica</span></p>
+
+    <div class="encabezado-pagina">
+        <div>
+            <h1 th:text="${tecnica.nombre}">Técnica</h1>
+            <p class="sutil">
+                <span th:text="${tecnica.categoria.etiqueta}">Categoría</span> ·
+                Responsable: <strong th:text="${tecnica.responsable}">sqa</strong> ·
+                <span class="estado-tecnica" th:classappend="${tecnica.estado.claseCss}" th:text="${tecnica.estado.etiqueta}">Pendiente</span>
+            </p>
+        </div>
+    </div>
+
+    <div class="rejilla-2">
+        <section class="tarjeta">
+            <h2>Evidencia actual</h2>
+            <p th:if="${tecnica.descripcion != null}" th:text="${tecnica.descripcion}">Descripción</p>
+            <p th:unless="${tecnica.evidencia.tieneRespaldo()}" class="vacio">Sin evidencia adjunta.</p>
+            <ul class="lista-evidencia" th:if="${tecnica.evidencia.tieneRespaldo()}">
+                <li th:if="${tecnica.evidencia.tieneUrl()}">URL:
+                    <a th:href="${tecnica.evidencia.url}" th:text="${tecnica.evidencia.url}" target="_blank" rel="noopener noreferrer">enlace</a></li>
+                <li th:if="${tecnica.evidencia.tieneArchivo()}">Archivo:
+                    <a th:href="@{/tecnicas/{id}/evidencia(id=${tecnica.id})}" th:text="${tecnica.evidencia.archivoNombre}">archivo.pdf</a></li>
+            </ul>
+        </section>
+
+        <section class="tarjeta">
+            <h2>Actualizar estado de ejecución</h2>
+            <div sec:authorize="hasAnyRole('LIDER_SQA', 'DESARROLLADOR')">
+                <p th:unless="${proyecto.activo()}" class="alerta alerta-error">El proyecto está inactivo: no admite cambios.</p>
+                <form th:if="${proyecto.activo()}" th:action="@{/tecnicas/{id}/estado(id=${tecnica.id})}" th:object="${form}"
+                      method="post" enctype="multipart/form-data" class="formulario" id="formulario-evidencia" novalidate>
+                    <div th:if="${#fields.hasGlobalErrors()}" class="alerta alerta-error" role="alert">
+                        <p th:each="mensaje : ${#fields.globalErrors()}" th:text="${mensaje}">Error</p>
+                    </div>
+                    <div class="campo" th:classappend="${#fields.hasErrors('estado')} ? 'con-error'">
+                        <label for="estado">Nuevo estado *</label>
+                        <select th:field="*{estado}">
+                            <option th:each="e : ${estados}" th:value="${e}" th:text="${e.etiqueta}">Pendiente</option>
+                        </select>
+                        <p class="error-campo" th:if="${#fields.hasErrors('estado')}" th:errors="*{estado}">Error</p>
+                    </div>
+                    <div class="campo" th:classappend="${#fields.hasErrors('evidenciaUrl')} ? 'con-error'">
+                        <label for="evidenciaUrl">URL de evidencia</label>
+                        <input type="url" th:field="*{evidenciaUrl}" maxlength="500"
+                               placeholder="https://github.com/riagalv/repoCalidad/pull/1">
+                        <p class="error-campo" th:if="${#fields.hasErrors('evidenciaUrl')}" th:errors="*{evidenciaUrl}">Error</p>
+                    </div>
+                    <div class="campo">
+                        <label for="archivo">Archivo de evidencia (máx. 10 MB)</label>
+                        <input type="file" id="archivo" name="archivo" data-max-bytes="10485760">
+                        <p class="error-campo" id="error-archivo" hidden></p>
+                    </div>
+                    <p class="sutil chico">Para marcar <strong>Aplicado</strong> es obligatorio adjuntar un archivo o una URL válida
+                        (o que la técnica ya tenga evidencia). RS-08.</p>
+                    <button type="submit" class="boton boton-primario">Guardar cambio</button>
+                </form>
+            </div>
+            <p sec:authorize="!hasAnyRole('LIDER_SQA', 'DESARROLLADOR')" class="sutil">
+                Solo el Líder SQA o el Desarrollador pueden actualizar técnicas.</p>
+        </section>
+    </div>
+
+    <section class="tarjeta">
+        <h2>Bitácora de cambios (RNF-03)</h2>
+        <div class="tabla-desplazable">
+            <table class="tabla">
+                <thead>
+                <tr><th>Fecha y hora</th><th>Autor</th><th>Cambio</th><th>Detalle</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${historial}">
+                    <td th:text="${#temporals.format(c.registradoEn, 'dd/MM/yyyy HH:mm')}">01/10/2026 10:00</td>
+                    <td th:text="${c.autor}">sqa</td>
+                    <td>
+                        <span th:if="${c.estadoAnterior != null}" th:text="${c.estadoAnterior.etiqueta} + ' → '">Pendiente →</span>
+                        <strong th:text="${c.estadoNuevo.etiqueta}">Aplicado</strong>
+                    </td>
+                    <td class="chico" th:text="${c.detalle ?: '—'}">—</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>

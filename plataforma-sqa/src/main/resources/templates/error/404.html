@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/plantilla :: cabeza('No encontrado')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor contenedor-angosto">
+    <section class="tarjeta pagina-error">
+        <p class="codigo-error">404</p>
+        <h1>No encontramos lo que buscas</h1>
+        <p th:text="${mensaje != null} ? ${mensaje} : 'La página o el registro solicitado no existe.'">No existe.</p>
+        <a th:href="@{/proyectos}" class="boton boton-primario">Volver a proyectos</a>
+    </section>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>

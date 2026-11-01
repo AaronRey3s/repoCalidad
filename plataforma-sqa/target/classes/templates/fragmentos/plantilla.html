@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="cabeza(titulo)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titulo} + ' · Plataforma SQA'">Plataforma SQA</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+
+<header th:fragment="navegacion" class="barra">
+    <a class="marca" th:href="@{/proyectos}">
+        <span class="marca-logo">SQA</span>
+        <span class="marca-texto">Plataforma de Monitoreo</span>
+    </a>
+    <nav class="menu" sec:authorize="isAuthenticated()">
+        <a th:href="@{/proyectos}">Proyectos</a>
+        <a th:href="@{/dashboard}">Dashboard</a>
+    </nav>
+    <div class="sesion" sec:authorize="isAuthenticated()">
+        <span class="usuario" th:if="${usuarioActual != null}">
+            <strong th:text="${usuarioActual.nombre()}">Usuario</strong>
+            <small th:text="${usuarioActual.rol()}">Rol</small>
+        </span>
+        <form th:action="@{/logout}" method="post" class="en-linea">
+            <button type="submit" class="boton boton-claro boton-chico">Salir</button>
+        </form>
+    </div>
+</header>
+
+<div th:fragment="mensajes" class="mensajes">
+    <div th:if="${exito}" class="alerta alerta-exito" role="status" th:text="${exito}">Operación exitosa</div>
+    <div th:if="${error}" class="alerta alerta-error" role="alert" th:text="${error}">Error</div>
+</div>
+
+<footer th:fragment="pie" class="pie">
+    Universidad Autónoma de Zacatecas · Ingeniería de Software · Aseguramiento de la Calidad del Software
+</footer>
+
+</body>
+</html>

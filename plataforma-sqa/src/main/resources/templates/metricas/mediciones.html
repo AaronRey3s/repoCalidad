@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Mediciones')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor">
+    <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
+
+    <p class="migas"><a th:href="@{/proyectos}">Proyectos</a> /
+        <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" th:text="${proyecto.nombre()}">Proyecto</a> /
+        <span th:text="${metrica.nombre}">Métrica</span></p>
+
+    <div class="encabezado-pagina">
+        <div>
+            <h1 th:text="${metrica.nombre}">Cobertura</h1>
+            <p class="sutil" th:text="${metrica.unidad.etiqueta} + ' · ' + ${metrica.frecuencia.etiqueta} + ' · ' + ${metrica.umbrales.sentido.etiqueta}">Porcentaje</p>
+        </div>
+    </div>
+
+    <div class="rejilla-2">
+        <section class="tarjeta">
+            <h2>Estado actual</h2>
+            <div class="estado-grande">
+                <span class="semaforo grande" th:classappend="${metrica.estadoActual.claseCss}"></span>
+                <div>
+                    <div class="valor-grande" th:text="${metrica.valorActualFormateado()}">—</div>
+                    <div class="sutil" th:text="${metrica.estadoActual.etiqueta}">Sin datos</div>
+                </div>
+            </div>
+            <div class="rangos">
+                <span class="rango verde" th:text="'Verde ' + ${metrica.rangoVerde()}">Verde</span>
+                <span class="rango amarillo" th:text="'Amarillo ' + ${metrica.rangoAmarillo()}">Amarillo</span>
+                <span class="rango rojo" th:text="'Rojo ' + ${metrica.rangoRojo()}">Rojo</span>
+            </div>
+            <div class="grafica-contenedor">
+                <p th:if="${grafica.vacia()}" class="vacio">Sin mediciones todavía.</p>
+                <svg th:unless="${grafica.vacia()}" class="grafica" viewBox="0 0 320 120" role="img"
+                     aria-label="Tendencia histórica de la métrica">
+                    <line class="umbral umbral-optimo" x1="0" x2="320"
+                          th:attr="y1=${grafica.yOptimo()},y2=${grafica.yOptimo()}"></line>
+                    <line class="umbral umbral-critico" x1="0" x2="320"
+                          th:attr="y1=${grafica.yCritico()},y2=${grafica.yCritico()}"></line>
+                    <polyline class="serie" th:attr="points=${grafica.puntos()}"></polyline>
+                    <circle th:each="mk : ${grafica.marcadores()}" r="4"
+                            th:attr="cx=${mk.x()},cy=${mk.y()}" th:class="'punto ' + ${mk.claseCss()}">
+                        <title th:text="${mk.titulo()}">Medición</title>
+                    </circle>
+                    <text class="eje" x="2" y="10" th:text="${grafica.etiquetaMaximo()}">100</text>
+                    <text class="eje" x="2" y="118" th:text="${grafica.etiquetaMinimo()}">0</text>
+                </svg>
+            </div>
+        </section>
+
+        <section class="tarjeta">
+            <h2>Registrar medición</h2>
+            <div sec:authorize="hasAnyRole('DESARROLLADOR', 'LIDER_SQA')">
+                <p th:unless="${proyecto.activo()}" class="alerta alerta-error">El proyecto está inactivo: no admite nuevas mediciones.</p>
+                <form th:if="${proyecto.activo()}" th:action="@{/metricas/{id}/mediciones(id=${metrica.id})}"
+                      th:object="${form}" method="post" class="formulario" novalidate>
+                    <div th:if="${#fields.hasGlobalErrors()}" class="alerta alerta-error" role="alert">
+                        <p th:each="mensaje : ${#fields.globalErrors()}" th:text="${mensaje}">Error</p>
+                    </div>
+                    <div class="campo" th:classappend="${#fields.hasErrors('valor')} ? 'con-error'">
+                        <label for="valor">Valor obtenido *</label>
+                        <input type="text" inputmode="decimal" th:field="*{valor}" placeholder="85.5" autocomplete="off">
+                        <p class="ayuda" th:text="'Unidad: ' + ${metrica.unidad.etiqueta}">Unidad</p>
+                        <p class="error-campo" th:if="${#fields.hasErrors('valor')}" th:errors="*{valor}">Error</p>
+                    </div>
+                    <div class="campo" th:classappend="${#fields.hasErrors('observacion')} ? 'con-error'">
+                        <label for="observacion">Observación (opcional)</label>
+                        <textarea th:field="*{observacion}" rows="2" maxlength="500"></textarea>
+                        <p class="error-campo" th:if="${#fields.hasErrors('observacion')}" th:errors="*{observacion}">Error</p>
+                    </div>
+                    <button type="submit" class="boton boton-primario">Registrar</button>
+                    <p class="sutil chico">Se guardan automáticamente la fecha/hora y tu usuario (RNF-03).</p>
+                </form>
+            </div>
+            <p sec:authorize="!hasAnyRole('DESARROLLADOR', 'LIDER_SQA')" class="sutil">
+                Solo el Desarrollador o el Líder SQA pueden capturar mediciones.</p>
+        </section>
+    </div>
+
+    <section class="tarjeta">
+        <h2>Histórico de mediciones</h2>
+        <p th:if="${historial.isEmpty()}" class="vacio">Aún no hay mediciones registradas.</p>
+        <div class="tabla-desplazable" th:unless="${historial.isEmpty()}">
+            <table class="tabla">
+                <thead>
+                <tr><th>Fecha y hora</th><th>Valor</th><th>Estado</th><th>Autor</th><th>Observación</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="m : ${historial}">
+                    <td th:text="${#temporals.format(m.registradoEn, 'dd/MM/yyyy HH:mm')}">01/10/2026 10:00</td>
+                    <td th:text="${m.valorFormateado()}">85 %</td>
+                    <td><span class="semaforo" th:classappend="${m.estado.claseCss}"></span>
+                        <span th:text="${m.estado.etiqueta}">Óptimo</span></td>
+                    <td th:text="${m.autor}">dev</td>
+                    <td th:text="${m.observacion ?: '—'}">—</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>

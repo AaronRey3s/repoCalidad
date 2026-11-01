@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Asignar técnica SQA')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor contenedor-angosto">
+    <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
+
+    <p class="migas"><a th:href="@{/proyectos}">Proyectos</a> /
+        <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" th:text="${proyecto.nombre()}">Proyecto</a> / Asignar técnica</p>
+    <h1>Asignar técnica SQA</h1>
+    <p class="sutil">RS-06 · La técnica se crea en estado <strong>Pendiente</strong> y queda registrada en la bitácora.</p>
+
+    <form th:action="@{/proyectos/{id}/tecnicas(id=${proyecto.id()})}" th:object="${form}" method="post"
+          class="tarjeta formulario" novalidate>
+
+        <div th:if="${#fields.hasGlobalErrors()}" class="alerta alerta-error" role="alert">
+            <p th:each="mensaje : ${#fields.globalErrors()}" th:text="${mensaje}">Error</p>
+        </div>
+
+        <div class="campo" th:classappend="${#fields.hasErrors('nombre')} ? 'con-error'">
+            <label for="nombre">Nombre de la técnica *</label>
+            <input type="text" th:field="*{nombre}" maxlength="150" placeholder="Revisión por pares del CU01">
+            <p class="error-campo" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}">Error</p>
+        </div>
+
+        <div class="fila-campos">
+            <div class="campo" th:classappend="${#fields.hasErrors('categoria')} ? 'con-error'">
+                <label for="categoria">Categoría *</label>
+                <select th:field="*{categoria}">
+                    <option value="">Selecciona…</option>
+                    <option th:each="c : ${categorias}" th:value="${c}" th:text="${c.etiqueta}">Pruebas</option>
+                </select>
+                <p class="error-campo" th:if="${#fields.hasErrors('categoria')}" th:errors="*{categoria}">Error</p>
+            </div>
+            <div class="campo" th:classappend="${#fields.hasErrors('responsable')} ? 'con-error'">
+                <label for="responsable">Responsable *</label>
+                <select th:field="*{responsable}">
+                    <option value="">Selecciona…</option>
+                    <option th:each="u : ${usuarios}" th:value="${u.username}"
+                            th:text="${u.nombreCompleto} + ' (' + ${u.rol.etiqueta} + ')'">Usuario</option>
+                </select>
+                <p class="error-campo" th:if="${#fields.hasErrors('responsable')}" th:errors="*{responsable}">Error</p>
+            </div>
+        </div>
+
+        <div class="campo" th:classappend="${#fields.hasErrors('descripcion')} ? 'con-error'">
+            <label for="descripcion">Descripción / alcance</label>
+            <textarea th:field="*{descripcion}" rows="3" maxlength="500"></textarea>
+            <p class="error-campo" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}">Error</p>
+        </div>
+
+        <div class="botones">
+            <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" class="boton boton-secundario">Cancelar</a>
+            <button type="submit" class="boton boton-primario">Asignar</button>
+        </div>
+    </form>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>
