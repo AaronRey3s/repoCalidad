@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MedicionController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.presentacion</a> &gt; <span class="el_source">MedicionController.java</span></div><h1>MedicionController.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.presentacion;
+
+import jakarta.validation.Valid;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import mx.uaz.sqa.dominio.excepcion.ReglaNegocioException;
+import mx.uaz.sqa.dominio.modelo.Medicion;
+import mx.uaz.sqa.dominio.modelo.Metrica;
+import mx.uaz.sqa.presentacion.formulario.MedicionForm;
+import mx.uaz.sqa.servicio.MedicionService;
+import mx.uaz.sqa.servicio.MetricaService;
+import mx.uaz.sqa.servicio.dto.IndicadorMetrica;
+import mx.uaz.sqa.servicio.dto.ProyectoResumen;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+/**
+ * CU03 – Registrar Medición de Métrica.
+ */
+@Controller
+@RequestMapping(&quot;/metricas/{id}/mediciones&quot;)
+public class MedicionController extends ControladorBase {
+
+    private final MetricaService metricaService;
+    private final MedicionService medicionService;
+
+<span class="fc" id="L37">    public MedicionController(MetricaService metricaService, MedicionService medicionService) {</span>
+<span class="fc" id="L38">        this.metricaService = metricaService;</span>
+<span class="fc" id="L39">        this.medicionService = medicionService;</span>
+<span class="fc" id="L40">    }</span>
+
+    @GetMapping
+    public String ver(@PathVariable(&quot;id&quot;) Long id, Model model) {
+<span class="fc" id="L44">        model.addAttribute(&quot;form&quot;, new MedicionForm());</span>
+<span class="fc" id="L45">        return mostrar(id, model);</span>
+    }
+
+    @PostMapping
+    @PreAuthorize(&quot;hasAnyRole('DESARROLLADOR', 'LIDER_SQA')&quot;)
+    public String registrar(@PathVariable(&quot;id&quot;) Long id, @Valid @ModelAttribute(&quot;form&quot;) MedicionForm form,
+                            BindingResult resultado, Principal principal, Model model,
+                            RedirectAttributes atributos) {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (!resultado.hasErrors()) {</span>
+            try {
+<span class="fc" id="L55">                Medicion medicion = medicionService.registrar(id, form.getValor(), form.getObservacion(),</span>
+<span class="fc" id="L56">                        principal.getName());</span>
+<span class="fc" id="L57">                exito(atributos, &quot;Medición registrada: &quot; + medicion.valorFormateado() + &quot; → &quot;</span>
+<span class="fc" id="L58">                        + medicion.getEstado().getEtiqueta());</span>
+<span class="fc" id="L59">                return &quot;redirect:/metricas/&quot; + id + &quot;/mediciones&quot;;</span>
+<span class="fc" id="L60">            } catch (ReglaNegocioException e) {</span>
+<span class="fc" id="L61">                registrarError(resultado, e);</span>
+            }
+        }
+<span class="fc" id="L64">        return mostrar(id, model);</span>
+    }
+
+    private String mostrar(Long id, Model model) {
+<span class="fc" id="L68">        Metrica metrica = metricaService.obtener(id);</span>
+<span class="fc" id="L69">        List&lt;Medicion&gt; historial = medicionService.historial(id);</span>
+<span class="fc" id="L70">        List&lt;Medicion&gt; recientesPrimero = new ArrayList&lt;&gt;(historial);</span>
+<span class="fc" id="L71">        Collections.reverse(recientesPrimero);</span>
+<span class="fc" id="L72">        model.addAttribute(&quot;metrica&quot;, metrica);</span>
+<span class="fc" id="L73">        model.addAttribute(&quot;proyecto&quot;, ProyectoResumen.desde(metrica.getProyecto()));</span>
+<span class="fc" id="L74">        model.addAttribute(&quot;historial&quot;, recientesPrimero);</span>
+<span class="fc" id="L75">        model.addAttribute(&quot;grafica&quot;, GraficaTendencia.de(IndicadorMetrica.desde(metrica, historial)));</span>
+<span class="fc" id="L76">        return &quot;metricas/mediciones&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

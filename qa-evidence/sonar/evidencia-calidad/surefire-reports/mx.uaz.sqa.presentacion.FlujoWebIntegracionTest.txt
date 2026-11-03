@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: mx.uaz.sqa.presentacion.FlujoWebIntegracionTest
+-------------------------------------------------------------------------------
+Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.28 s -- in mx.uaz.sqa.presentacion.FlujoWebIntegracionTest

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProyectoForm.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.presentacion.formulario</a> &gt; <span class="el_source">ProyectoForm.java</span></div><h1>ProyectoForm.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.presentacion.formulario;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
+import mx.uaz.sqa.servicio.dto.DatosProyecto;
+import mx.uaz.sqa.servicio.dto.ProyectoResumen;
+import org.springframework.format.annotation.DateTimeFormat;
+
+/**
+ * Formulario de CU01 (registro y edición de proyecto).
+ */
+<span class="fc" id="L14">public class ProyectoForm {</span>
+
+    @NotBlank(message = &quot;El nombre del proyecto es obligatorio&quot;)
+    @Size(max = 120, message = &quot;Máximo 120 caracteres&quot;)
+    private String nombre;
+
+    @Size(max = 1000, message = &quot;Máximo 1000 caracteres&quot;)
+    private String descripcion;
+
+    @Size(max = 300, message = &quot;Máximo 300 caracteres&quot;)
+    private String tecnologias;
+
+    @NotBlank(message = &quot;La etiqueta del periodo es obligatoria&quot;)
+    @Size(max = 60, message = &quot;Máximo 60 caracteres&quot;)
+    private String etiquetaPeriodo;
+
+    @NotNull(message = &quot;La fecha de inicio es obligatoria&quot;)
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate fechaInicio;
+
+    @NotNull(message = &quot;La fecha de fin es obligatoria&quot;)
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate fechaFin;
+
+    public static ProyectoForm desde(ProyectoResumen proyecto) {
+<span class="fc" id="L39">        ProyectoForm form = new ProyectoForm();</span>
+<span class="fc" id="L40">        form.setNombre(proyecto.nombre());</span>
+<span class="fc" id="L41">        form.setDescripcion(proyecto.descripcion());</span>
+<span class="fc" id="L42">        form.setTecnologias(proyecto.tecnologias());</span>
+<span class="fc" id="L43">        form.setEtiquetaPeriodo(proyecto.periodo());</span>
+<span class="fc" id="L44">        form.setFechaInicio(proyecto.fechaInicio());</span>
+<span class="fc" id="L45">        form.setFechaFin(proyecto.fechaFin());</span>
+<span class="fc" id="L46">        return form;</span>
+    }
+
+    public DatosProyecto aDatos() {
+<span class="fc" id="L50">        return new DatosProyecto(nombre, descripcion, tecnologias, etiquetaPeriodo, fechaInicio, fechaFin);</span>
+    }
+
+    public String getNombre() {
+<span class="fc" id="L54">        return nombre;</span>
+    }
+
+    public void setNombre(String nombre) {
+<span class="fc" id="L58">        this.nombre = nombre;</span>
+<span class="fc" id="L59">    }</span>
+
+    public String getDescripcion() {
+<span class="fc" id="L62">        return descripcion;</span>
+    }
+
+    public void setDescripcion(String descripcion) {
+<span class="fc" id="L66">        this.descripcion = descripcion;</span>
+<span class="fc" id="L67">    }</span>
+
+    public String getTecnologias() {
+<span class="fc" id="L70">        return tecnologias;</span>
+    }
+
+    public void setTecnologias(String tecnologias) {
+<span class="fc" id="L74">        this.tecnologias = tecnologias;</span>
+<span class="fc" id="L75">    }</span>
+
+    public String getEtiquetaPeriodo() {
+<span class="fc" id="L78">        return etiquetaPeriodo;</span>
+    }
+
+    public void setEtiquetaPeriodo(String etiquetaPeriodo) {
+<span class="fc" id="L82">        this.etiquetaPeriodo = etiquetaPeriodo;</span>
+<span class="fc" id="L83">    }</span>
+
+    public LocalDate getFechaInicio() {
+<span class="fc" id="L86">        return fechaInicio;</span>
+    }
+
+    public void setFechaInicio(LocalDate fechaInicio) {
+<span class="fc" id="L90">        this.fechaInicio = fechaInicio;</span>
+<span class="fc" id="L91">    }</span>
+
+    public LocalDate getFechaFin() {
+<span class="fc" id="L94">        return fechaFin;</span>
+    }
+
+    public void setFechaFin(LocalDate fechaFin) {
+<span class="fc" id="L98">        this.fechaFin = fechaFin;</span>
+<span class="fc" id="L99">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

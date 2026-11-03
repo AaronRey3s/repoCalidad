@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InstantaneaSalud.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.servicio</a> &gt; <span class="el_source">InstantaneaSalud.java</span></div><h1>InstantaneaSalud.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.servicio;
+
+import java.util.List;
+import java.util.Map;
+import mx.uaz.sqa.dominio.modelo.IndiceSalud;
+import mx.uaz.sqa.dominio.modelo.Medicion;
+import mx.uaz.sqa.dominio.modelo.Metrica;
+import mx.uaz.sqa.dominio.modelo.Proyecto;
+import mx.uaz.sqa.dominio.modelo.TecnicaSqa;
+
+/**
+ * Fotografía del estado SQA de un proyecto en un momento dado; la usan el dashboard (CU05)
+ * y el reporte (CU06) para que ambos muestren exactamente los mismos números.
+ */
+<span class="fc" id="L15">public record InstantaneaSalud(Proyecto proyecto, List&lt;Metrica&gt; metricas,</span>
+                               Map&lt;Metrica, List&lt;Medicion&gt;&gt; medicionesPorMetrica,
+                               List&lt;TecnicaSqa&gt; tecnicas, IndiceSalud salud) {
+
+    public List&lt;Medicion&gt; mediciones(Metrica metrica) {
+<span class="fc" id="L20">        return medicionesPorMetrica.getOrDefault(metrica, List.of());</span>
+    }
+
+    /** CU06 flujo 2a: no hay mediciones ni técnicas registradas. */
+    public boolean sinRegistros() {
+<span class="fc" id="L25">        boolean sinMediciones = medicionesPorMetrica.values().stream().allMatch(List::isEmpty);</span>
+<span class="pc bpc" id="L26" title="1 of 4 branches missed.">        return sinMediciones &amp;&amp; tecnicas.isEmpty();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

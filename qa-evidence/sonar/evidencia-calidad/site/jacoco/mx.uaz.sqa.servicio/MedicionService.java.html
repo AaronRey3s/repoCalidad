@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MedicionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.servicio</a> &gt; <span class="el_source">MedicionService.java</span></div><h1>MedicionService.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.servicio;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.List;
+import mx.uaz.sqa.dominio.excepcion.RecursoNoEncontradoException;
+import mx.uaz.sqa.dominio.modelo.Medicion;
+import mx.uaz.sqa.dominio.modelo.Metrica;
+import mx.uaz.sqa.dominio.modelo.ValorNumerico;
+import mx.uaz.sqa.persistencia.MedicionRepository;
+import mx.uaz.sqa.persistencia.MetricaRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * CU03 – Registrar Medición de Métrica (RS-04, RS-05).
+ */
+@Service
+@Transactional
+public class MedicionService {
+
+    private final MetricaRepository metricas;
+    private final MedicionRepository mediciones;
+    private final Clock reloj;
+
+<span class="fc" id="L26">    public MedicionService(MetricaRepository metricas, MedicionRepository mediciones, Clock reloj) {</span>
+<span class="fc" id="L27">        this.metricas = metricas;</span>
+<span class="fc" id="L28">        this.mediciones = mediciones;</span>
+<span class="fc" id="L29">        this.reloj = reloj;</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     * Registra el valor con fecha/hora actual y autor, y actualiza el semáforo de la métrica.
+     *
+     * @param valorTexto valor tal como lo capturó el usuario (se valida que sea numérico)
+     */
+    public Medicion registrar(Long metricaId, String valorTexto, String observacion, String autor) {
+<span class="fc" id="L38">        Metrica metrica = metricas.findById(metricaId)</span>
+<span class="fc" id="L39">                .orElseThrow(() -&gt; RecursoNoEncontradoException.de(&quot;la métrica&quot;, metricaId));</span>
+<span class="fc" id="L40">        double valor = ValorNumerico.desdeTexto(valorTexto, &quot;valor&quot;);</span>
+<span class="fc" id="L41">        Medicion medicion = metrica.registrarMedicion(valor, observacion, autor, LocalDateTime.now(reloj));</span>
+<span class="fc" id="L42">        return mediciones.save(medicion);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;Medicion&gt; historial(Long metricaId) {
+<span class="fc" id="L47">        return mediciones.findByMetricaIdOrderByRegistradoEnAscIdAsc(metricaId);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

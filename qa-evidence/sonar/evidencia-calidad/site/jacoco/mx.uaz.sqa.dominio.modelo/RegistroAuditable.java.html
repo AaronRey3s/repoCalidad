@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RegistroAuditable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.dominio.modelo</a> &gt; <span class="el_source">RegistroAuditable.java</span></div><h1>RegistroAuditable.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.dominio.modelo;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+/**
+ * RNF-03 (Trazabilidad y Auditoría): todo registro auditable guarda de forma inmutable
+ * la marca de tiempo exacta y el identificador del usuario autor.
+ *
+ * &lt;p&gt;Las columnas se declaran {@code updatable = false} y la clase no expone setters,
+ * por lo que una vez insertados estos valores no pueden modificarse.&lt;/p&gt;
+ */
+@MappedSuperclass
+public abstract class RegistroAuditable extends EntidadPersistente {
+
+    @Column(name = &quot;autor&quot;, nullable = false, updatable = false, length = 60)
+    private String autor;
+
+    @Column(name = &quot;registrado_en&quot;, nullable = false, updatable = false)
+    private LocalDateTime registradoEn;
+
+<span class="fc" id="L24">    protected RegistroAuditable() {</span>
+        // Requerido por JPA
+<span class="fc" id="L26">    }</span>
+
+<span class="fc" id="L28">    protected RegistroAuditable(String autor, LocalDateTime registradoEn) {</span>
+<span class="fc" id="L29">        this.autor = Validaciones.requerido(autor,</span>
+                &quot;El autor del registro es obligatorio (RNF-03)&quot;, &quot;autor&quot;, 60);
+<span class="fc" id="L31">        this.registradoEn = Objects.requireNonNull(registradoEn,</span>
+                &quot;La marca de tiempo del registro es obligatoria (RNF-03)&quot;);
+<span class="fc" id="L33">    }</span>
+
+    public String getAutor() {
+<span class="fc" id="L36">        return autor;</span>
+    }
+
+    public LocalDateTime getRegistradoEn() {
+<span class="fc" id="L40">        return registradoEn;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UnidadMedida.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.dominio.modelo</a> &gt; <span class="el_source">UnidadMedida.java</span></div><h1>UnidadMedida.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.dominio.modelo;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import mx.uaz.sqa.dominio.excepcion.ValorFueraDeDominioException;
+
+/**
+ * Unidad de medida de una métrica (CU02 paso 2: porcentaje, conteo o razón).
+ * Cada unidad define polimórficamente qué valores admite (CU03 flujo 2a).
+ */
+<span class="fc" id="L11">public enum UnidadMedida {</span>
+
+<span class="fc" id="L13">    PORCENTAJE(&quot;Porcentaje (%)&quot;, &quot;%&quot;) {</span>
+        @Override
+        public boolean admite(double valor) {
+<span class="fc bfc" id="L16" title="All 6 branches covered.">            return Double.isFinite(valor) &amp;&amp; valor &gt;= 0 &amp;&amp; valor &lt;= 100;</span>
+        }
+
+        @Override
+        public String reglaDeDominio() {
+<span class="fc" id="L21">            return &quot;un porcentaje debe estar en el rango [0, 100]&quot;;</span>
+        }
+    },
+
+<span class="fc" id="L25">    CONTEO(&quot;Conteo&quot;, &quot;&quot;) {</span>
+        @Override
+        public boolean admite(double valor) {
+<span class="pc bpc" id="L28" title="1 of 6 branches missed.">            return Double.isFinite(valor) &amp;&amp; valor &gt;= 0 &amp;&amp; valor == Math.rint(valor);</span>
+        }
+
+        @Override
+        public String reglaDeDominio() {
+<span class="fc" id="L33">            return &quot;un conteo debe ser un número entero mayor o igual a 0&quot;;</span>
+        }
+    },
+
+<span class="fc" id="L37">    RAZON(&quot;Razón&quot;, &quot;&quot;) {</span>
+        @Override
+        public boolean admite(double valor) {
+<span class="fc bfc" id="L40" title="All 4 branches covered.">            return Double.isFinite(valor) &amp;&amp; valor &gt;= 0;</span>
+        }
+
+        @Override
+        public String reglaDeDominio() {
+<span class="fc" id="L45">            return &quot;una razón debe ser un número mayor o igual a 0&quot;;</span>
+        }
+    };
+
+    private final String etiqueta;
+    private final String simbolo;
+
+<span class="fc" id="L52">    UnidadMedida(String etiqueta, String simbolo) {</span>
+<span class="fc" id="L53">        this.etiqueta = etiqueta;</span>
+<span class="fc" id="L54">        this.simbolo = simbolo;</span>
+<span class="fc" id="L55">    }</span>
+
+    /** Indica si el valor pertenece al dominio válido de la unidad. */
+    public abstract boolean admite(double valor);
+
+    /** Descripción legible de la regla de dominio de la unidad. */
+    public abstract String reglaDeDominio();
+
+    /**
+     * Lanza {@link ValorFueraDeDominioException} si el valor no es admitido.
+     *
+     * @param campo campo del formulario a resaltar en caso de error
+     */
+    public void validar(double valor, String campo) {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (!admite(valor)) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            String mostrado = Double.isFinite(valor) ? formatear(valor) : String.valueOf(valor);</span>
+<span class="fc" id="L71">            throw new ValorFueraDeDominioException(</span>
+<span class="fc" id="L72">                    &quot;El valor &quot; + mostrado + &quot; no es válido: &quot; + reglaDeDominio() + &quot;.&quot;, campo);</span>
+        }
+<span class="fc" id="L74">    }</span>
+
+    /** Formatea el valor con máximo 2 decimales y el símbolo de la unidad. */
+    public String formatear(double valor) {
+<span class="fc" id="L78">        String numero = BigDecimal.valueOf(valor)</span>
+<span class="fc" id="L79">                .setScale(2, RoundingMode.HALF_UP)</span>
+<span class="fc" id="L80">                .stripTrailingZeros()</span>
+<span class="fc" id="L81">                .toPlainString();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        return simbolo.isEmpty() ? numero : numero + &quot; &quot; + simbolo;</span>
+    }
+
+    public String getEtiqueta() {
+<span class="fc" id="L86">        return etiqueta;</span>
+    }
+
+    public String getSimbolo() {
+<span class="fc" id="L90">        return simbolo;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

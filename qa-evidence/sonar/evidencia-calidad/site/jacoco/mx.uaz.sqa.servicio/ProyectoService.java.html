@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProyectoService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.servicio</a> &gt; <span class="el_source">ProyectoService.java</span></div><h1>ProyectoService.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.servicio;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import mx.uaz.sqa.dominio.excepcion.ProyectoDuplicadoException;
+import mx.uaz.sqa.dominio.excepcion.RecursoNoEncontradoException;
+import mx.uaz.sqa.dominio.modelo.Periodo;
+import mx.uaz.sqa.dominio.modelo.Proyecto;
+import mx.uaz.sqa.dominio.modelo.Validaciones;
+import mx.uaz.sqa.persistencia.ProyectoRepository;
+import mx.uaz.sqa.servicio.dto.DatosProyecto;
+import mx.uaz.sqa.servicio.dto.ProyectoResumen;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * CU01 – Gestionar Proyecto de Software por Periodo (RS-01, RS-02).
+ */
+@Service
+@Transactional
+public class ProyectoService {
+
+<span class="fc" id="L28">    private static final Sort ORDEN = Sort.by(Sort.Order.desc(&quot;periodo.fechaInicio&quot;), Sort.Order.asc(&quot;nombre&quot;));</span>
+
+    private final ProyectoRepository proyectos;
+    private final Clock reloj;
+
+<span class="fc" id="L33">    public ProyectoService(ProyectoRepository proyectos, Clock reloj) {</span>
+<span class="fc" id="L34">        this.proyectos = proyectos;</span>
+<span class="fc" id="L35">        this.reloj = reloj;</span>
+<span class="fc" id="L36">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;ProyectoResumen&gt; listar() {
+<span class="fc" id="L40">        return proyectos.findAll(ORDEN).stream().map(ProyectoResumen::desde).toList();</span>
+    }
+
+    /** Catálogo de proyectos agrupado por etiqueta de periodo (selector del dashboard). */
+    @Transactional(readOnly = true)
+    public Map&lt;String, List&lt;ProyectoResumen&gt;&gt; listarAgrupadosPorPeriodo() {
+<span class="fc" id="L46">        return listar().stream().collect(Collectors.groupingBy(</span>
+<span class="fc" id="L47">                ProyectoResumen::periodo, LinkedHashMap::new, Collectors.toList()));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Proyecto obtener(Long id) {
+<span class="fc" id="L52">        return proyectos.findById(id).orElseThrow(() -&gt; RecursoNoEncontradoException.de(&quot;el proyecto&quot;, id));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ProyectoResumen obtenerResumen(Long id) {
+<span class="fc" id="L57">        return ProyectoResumen.desde(obtener(id));</span>
+    }
+
+    /** RS-01: registra un proyecto vinculado obligatoriamente a un periodo. */
+    public Proyecto crear(DatosProyecto datos) {
+<span class="fc" id="L62">        Periodo periodo = Periodo.de(datos.etiquetaPeriodo(), datos.fechaInicio(), datos.fechaFin());</span>
+<span class="fc" id="L63">        Proyecto nuevo = new Proyecto(datos.nombre(), datos.descripcion(), datos.tecnologias(), periodo,</span>
+<span class="fc" id="L64">                LocalDateTime.now(reloj));</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (proyectos.existsByNombreIgnoreCaseAndPeriodoEtiquetaIgnoreCase(nuevo.getNombre(), periodo.getEtiqueta())) {</span>
+<span class="fc" id="L66">            throw duplicado(nuevo.getNombre(), periodo);</span>
+        }
+<span class="fc" id="L68">        return proyectos.save(nuevo);</span>
+    }
+
+    /** RS-02: actualiza nombre, descripción, tecnologías y periodo. */
+    public Proyecto actualizar(Long id, DatosProyecto datos) {
+<span class="fc" id="L73">        Proyecto proyecto = obtener(id);</span>
+<span class="fc" id="L74">        Periodo periodo = Periodo.de(datos.etiquetaPeriodo(), datos.fechaInicio(), datos.fechaFin());</span>
+<span class="fc" id="L75">        String nombre = Validaciones.requerido(datos.nombre(), &quot;El nombre del proyecto es obligatorio&quot;, &quot;nombre&quot;, 120);</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (proyectos.existsByNombreIgnoreCaseAndPeriodoEtiquetaIgnoreCaseAndIdNot(nombre, periodo.getEtiqueta(), id)) {</span>
+<span class="fc" id="L77">            throw duplicado(nombre, periodo);</span>
+        }
+<span class="fc" id="L79">        proyecto.actualizarDatos(nombre, datos.descripcion(), datos.tecnologias(), periodo);</span>
+<span class="fc" id="L80">        return proyecto;</span>
+    }
+
+    public void cambiarActivo(Long id, boolean activo) {
+<span class="fc" id="L84">        Proyecto proyecto = obtener(id);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (activo) {</span>
+<span class="fc" id="L86">            proyecto.activar();</span>
+        } else {
+<span class="fc" id="L88">            proyecto.desactivar();</span>
+        }
+<span class="fc" id="L90">    }</span>
+
+    private static ProyectoDuplicadoException duplicado(String nombre, Periodo periodo) {
+<span class="fc" id="L93">        return new ProyectoDuplicadoException(&quot;El proyecto \&quot;&quot; + nombre + &quot;\&quot; ya se encuentra registrado en el periodo \&quot;&quot;</span>
+<span class="fc" id="L94">                + periodo.getEtiqueta() + &quot;\&quot;; no se guardaron cambios&quot;, &quot;nombre&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

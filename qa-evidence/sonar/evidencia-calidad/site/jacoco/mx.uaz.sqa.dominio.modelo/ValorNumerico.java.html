@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValorNumerico.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.dominio.modelo</a> &gt; <span class="el_source">ValorNumerico.java</span></div><h1>ValorNumerico.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.dominio.modelo;
+
+import java.util.regex.Pattern;
+import mx.uaz.sqa.dominio.excepcion.ValorFueraDeDominioException;
+
+/**
+ * Convierte el texto capturado por el usuario en un valor numérico (CU03 flujo 2a:
+ * &quot;si el actor introduce caracteres no numéricos ... el sistema impide el registro&quot;).
+ * Acepta punto o coma decimal. Rechaza notación científica, NaN e Infinity.
+ */
+public final class ValorNumerico {
+
+<span class="fc" id="L13">    private static final Pattern FORMATO = Pattern.compile(&quot;^[-+]?\\d+([.,]\\d+)?$&quot;);</span>
+
+    private ValorNumerico() {
+    }
+
+    public static double desdeTexto(String texto, String campo) {
+<span class="fc bfc" id="L19" title="All 4 branches covered.">        if (texto == null || texto.isBlank()) {</span>
+<span class="fc" id="L20">            throw new ValorFueraDeDominioException(&quot;Ingresa el valor numérico obtenido en la medición&quot;, campo);</span>
+        }
+<span class="fc" id="L22">        String limpio = texto.trim();</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (!FORMATO.matcher(limpio).matches()) {</span>
+<span class="fc" id="L24">            throw new ValorFueraDeDominioException(&quot;El valor \&quot;&quot; + limpio</span>
+                    + &quot;\&quot; no es numérico. Usa solo dígitos y punto decimal (p. ej. 85.5)&quot;, campo);
+        }
+<span class="fc" id="L27">        double valor = Double.parseDouble(limpio.replace(',', '.'));</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        if (!Double.isFinite(valor)) {</span>
+<span class="fc" id="L29">            throw new ValorFueraDeDominioException(&quot;El valor es demasiado grande&quot;, campo);</span>
+        }
+<span class="fc" id="L31">        return valor;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

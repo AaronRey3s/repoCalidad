@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReglaNegocioException.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.dominio.excepcion</a> &gt; <span class="el_source">ReglaNegocioException.java</span></div><h1>ReglaNegocioException.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.dominio.excepcion;
+
+/**
+ * Excepción base de toda violación a una regla de negocio del SRS.
+ *
+ * &lt;p&gt;Opcionalmente indica el &lt;em&gt;campo&lt;/em&gt; del formulario que originó el error, para que
+ * la capa de presentación lo resalte (CU01 flujo 3a: &quot;el sistema resalta los campos con error&quot;).
+ * Las subclases especializan el tipo de regla violada (herencia + polimorfismo).&lt;/p&gt;
+ */
+public class ReglaNegocioException extends RuntimeException {
+
+    private final String campo;
+
+    public ReglaNegocioException(String mensaje) {
+<span class="fc" id="L15">        this(mensaje, null);</span>
+<span class="fc" id="L16">    }</span>
+
+    public ReglaNegocioException(String mensaje, String campo) {
+<span class="fc" id="L19">        super(mensaje);</span>
+<span class="fc" id="L20">        this.campo = campo;</span>
+<span class="fc" id="L21">    }</span>
+
+    public String getCampo() {
+<span class="fc" id="L24">        return campo;</span>
+    }
+
+    public boolean tieneCampo() {
+<span class="pc bpc" id="L28" title="2 of 4 branches missed.">        return campo != null &amp;&amp; !campo.isBlank();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

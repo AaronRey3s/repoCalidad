@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IndicadorMetrica.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.servicio.dto</a> &gt; <span class="el_source">IndicadorMetrica.java</span></div><h1>IndicadorMetrica.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.servicio.dto;
+
+import java.util.List;
+import mx.uaz.sqa.dominio.modelo.EstadoSemaforo;
+import mx.uaz.sqa.dominio.modelo.Medicion;
+import mx.uaz.sqa.dominio.modelo.Metrica;
+import mx.uaz.sqa.dominio.modelo.UnidadMedida;
+
+/**
+ * Indicador tipo semáforo de una métrica en el dashboard (RS-09).
+ */
+<span class="fc" id="L12">public record IndicadorMetrica(Long id, String nombre, String unidad, String frecuencia,</span>
+                               EstadoSemaforo estado, String valorActual,
+                               String rangoVerde, String rangoAmarillo, String rangoRojo,
+                               double limiteOptimo, double limiteCritico, boolean esPorcentaje,
+                               List&lt;PuntoSerie&gt; serie) {
+
+    public static IndicadorMetrica desde(Metrica metrica, List&lt;Medicion&gt; mediciones) {
+<span class="fc" id="L19">        List&lt;PuntoSerie&gt; serie = mediciones.stream()</span>
+<span class="fc" id="L20">                .map(m -&gt; new PuntoSerie(m.getRegistradoEn(), m.getValor(), m.valorFormateado(), m.getEstado()))</span>
+<span class="fc" id="L21">                .toList();</span>
+<span class="fc" id="L22">        return new IndicadorMetrica(metrica.getId(), metrica.getNombre(), metrica.getUnidad().getEtiqueta(),</span>
+<span class="fc" id="L23">                metrica.getFrecuencia().getEtiqueta(), metrica.getEstadoActual(), metrica.valorActualFormateado(),</span>
+<span class="fc" id="L24">                metrica.rangoVerde(), metrica.rangoAmarillo(), metrica.rangoRojo(),</span>
+<span class="fc" id="L25">                metrica.getUmbrales().getLimiteOptimo(), metrica.getUmbrales().getLimiteCritico(),</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">                metrica.getUnidad() == UnidadMedida.PORCENTAJE, serie);</span>
+    }
+
+    public boolean tieneDatos() {
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        return !serie.isEmpty();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

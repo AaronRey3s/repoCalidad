@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MetricaController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.presentacion</a> &gt; <span class="el_source">MetricaController.java</span></div><h1>MetricaController.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.presentacion;
+
+import jakarta.validation.Valid;
+import mx.uaz.sqa.dominio.excepcion.ReglaNegocioException;
+import mx.uaz.sqa.dominio.modelo.Frecuencia;
+import mx.uaz.sqa.dominio.modelo.Metrica;
+import mx.uaz.sqa.dominio.modelo.SentidoMetrica;
+import mx.uaz.sqa.dominio.modelo.UnidadMedida;
+import mx.uaz.sqa.presentacion.formulario.MetricaForm;
+import mx.uaz.sqa.servicio.MetricaService;
+import mx.uaz.sqa.servicio.ProyectoService;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+/**
+ * CU02 – Configurar Métricas de Calidad del Proyecto.
+ */
+@Controller
+public class MetricaController extends ControladorBase {
+
+    private final ProyectoService proyectoService;
+    private final MetricaService metricaService;
+
+<span class="fc" id="L31">    public MetricaController(ProyectoService proyectoService, MetricaService metricaService) {</span>
+<span class="fc" id="L32">        this.proyectoService = proyectoService;</span>
+<span class="fc" id="L33">        this.metricaService = metricaService;</span>
+<span class="fc" id="L34">    }</span>
+
+    @GetMapping(&quot;/proyectos/{proyectoId}/metricas/nueva&quot;)
+    @PreAuthorize(&quot;hasRole('LIDER_SQA')&quot;)
+    public String nueva(@PathVariable(&quot;proyectoId&quot;) Long proyectoId, Model model) {
+<span class="fc" id="L39">        model.addAttribute(&quot;form&quot;, new MetricaForm());</span>
+<span class="fc" id="L40">        return mostrarFormulario(proyectoId, model);</span>
+    }
+
+    @PostMapping(&quot;/proyectos/{proyectoId}/metricas&quot;)
+    @PreAuthorize(&quot;hasRole('LIDER_SQA')&quot;)
+    public String configurar(@PathVariable(&quot;proyectoId&quot;) Long proyectoId,
+                             @Valid @ModelAttribute(&quot;form&quot;) MetricaForm form, BindingResult resultado,
+                             Model model, RedirectAttributes atributos) {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (!resultado.hasErrors()) {</span>
+            try {
+<span class="fc" id="L50">                Metrica metrica = metricaService.configurar(proyectoId, form.aDatos());</span>
+<span class="fc" id="L51">                exito(atributos, &quot;Métrica \&quot;&quot; + metrica.getNombre() + &quot;\&quot; configurada. Verde &quot; + metrica.rangoVerde()</span>
+<span class="fc" id="L52">                        + &quot; · Amarillo &quot; + metrica.rangoAmarillo() + &quot; · Rojo &quot; + metrica.rangoRojo());</span>
+<span class="fc" id="L53">                return &quot;redirect:/proyectos/&quot; + proyectoId;</span>
+<span class="fc" id="L54">            } catch (ReglaNegocioException e) {</span>
+<span class="fc" id="L55">                registrarError(resultado, e);</span>
+            }
+        }
+<span class="fc" id="L58">        return mostrarFormulario(proyectoId, model);</span>
+    }
+
+    @PostMapping(&quot;/metricas/{id}/eliminar&quot;)
+    @PreAuthorize(&quot;hasRole('LIDER_SQA')&quot;)
+    public String eliminar(@PathVariable(&quot;id&quot;) Long id, RedirectAttributes atributos) {
+<span class="fc" id="L64">        Long proyectoId = metricaService.obtener(id).getProyecto().getId();</span>
+        try {
+<span class="fc" id="L66">            metricaService.eliminar(id);</span>
+<span class="fc" id="L67">            exito(atributos, &quot;Métrica eliminada&quot;);</span>
+<span class="nc" id="L68">        } catch (ReglaNegocioException e) {</span>
+<span class="nc" id="L69">            error(atributos, e.getMessage());</span>
+<span class="fc" id="L70">        }</span>
+<span class="fc" id="L71">        return &quot;redirect:/proyectos/&quot; + proyectoId;</span>
+    }
+
+    private String mostrarFormulario(Long proyectoId, Model model) {
+<span class="fc" id="L75">        model.addAttribute(&quot;proyecto&quot;, proyectoService.obtenerResumen(proyectoId));</span>
+<span class="fc" id="L76">        model.addAttribute(&quot;unidades&quot;, UnidadMedida.values());</span>
+<span class="fc" id="L77">        model.addAttribute(&quot;frecuencias&quot;, Frecuencia.values());</span>
+<span class="fc" id="L78">        model.addAttribute(&quot;sentidos&quot;, SentidoMetrica.values());</span>
+<span class="fc" id="L79">        return &quot;metricas/formulario&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

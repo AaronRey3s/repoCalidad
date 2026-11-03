@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReporteController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.presentacion</a> &gt; <span class="el_source">ReporteController.java</span></div><h1>ReporteController.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.presentacion;
+
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import mx.uaz.sqa.dominio.excepcion.ReporteSinDatosException;
+import mx.uaz.sqa.servicio.ReporteService;
+import mx.uaz.sqa.servicio.dto.ArchivoDescargable;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+/**
+ * CU06 – Exportar Reporte del Estado de Salud del Software.
+ */
+@Controller
+public class ReporteController {
+
+    private final ReporteService reporteService;
+
+<span class="fc" id="L28">    public ReporteController(ReporteService reporteService) {</span>
+<span class="fc" id="L29">        this.reporteService = reporteService;</span>
+<span class="fc" id="L30">    }</span>
+
+    @GetMapping(&quot;/proyectos/{id}/reporte.pdf&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LIDER_SQA', 'LIDER_PROYECTO', 'STAKEHOLDER')&quot;)
+    public ResponseEntity&lt;byte[]&gt; exportar(@PathVariable(&quot;id&quot;) Long id, Principal principal) {
+        try {
+<span class="fc" id="L36">            ArchivoDescargable pdf = reporteService.exportarPdf(id, principal.getName());</span>
+<span class="fc" id="L37">            return ResponseEntity.ok()</span>
+<span class="fc" id="L38">                    .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()</span>
+<span class="fc" id="L39">                            .filename(pdf.nombre(), StandardCharsets.UTF_8).build().toString())</span>
+<span class="fc" id="L40">                    .contentType(MediaType.APPLICATION_PDF)</span>
+<span class="fc" id="L41">                    .body(pdf.contenido());</span>
+<span class="fc" id="L42">        } catch (ReporteSinDatosException e) {</span>
+            // CU06 flujo 2a: se notifica en el detalle del proyecto y se cancela la operación
+<span class="fc" id="L44">            URI destino = ServletUriComponentsBuilder.fromCurrentContextPath()</span>
+<span class="fc" id="L45">                    .path(&quot;/proyectos/{id}&quot;)</span>
+<span class="fc" id="L46">                    .queryParam(&quot;reporteSinDatos&quot;, &quot;1&quot;)</span>
+<span class="fc" id="L47">                    .buildAndExpand(id)</span>
+<span class="fc" id="L48">                    .toUri();</span>
+<span class="fc" id="L49">            return ResponseEntity.status(HttpStatus.SEE_OTHER).location(destino).build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

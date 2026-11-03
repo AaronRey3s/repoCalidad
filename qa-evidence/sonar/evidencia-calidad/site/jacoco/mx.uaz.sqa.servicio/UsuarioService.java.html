@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UsuarioService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.servicio</a> &gt; <span class="el_source">UsuarioService.java</span></div><h1>UsuarioService.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.servicio;
+
+import java.util.List;
+import java.util.Optional;
+import mx.uaz.sqa.dominio.modelo.Usuario;
+import mx.uaz.sqa.persistencia.UsuarioRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Consulta de usuarios (responsables de técnicas y datos del usuario en sesión).
+ */
+@Service
+@Transactional(readOnly = true)
+public class UsuarioService {
+
+    private final UsuarioRepository usuarios;
+
+<span class="fc" id="L19">    public UsuarioService(UsuarioRepository usuarios) {</span>
+<span class="fc" id="L20">        this.usuarios = usuarios;</span>
+<span class="fc" id="L21">    }</span>
+
+    public List&lt;Usuario&gt; listar() {
+<span class="fc" id="L24">        return usuarios.findAllByOrderByNombreCompletoAsc();</span>
+    }
+
+    public Optional&lt;Usuario&gt; buscarPorUsername(String username) {
+<span class="fc bfc" id="L28" title="All 4 branches covered.">        if (username == null || username.isBlank()) {</span>
+<span class="fc" id="L29">            return Optional.empty();</span>
+        }
+<span class="fc" id="L31">        return usuarios.findByUsername(username);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
