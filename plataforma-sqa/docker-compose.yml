@@ -1,0 +1,39 @@
+services:
+  db-mysql:
+    image: mysql:8.0
+    container_name: sqa-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: plataforma_sqa
+      MYSQL_ROOT_PASSWORD: sqa_secret_password
+      TZ: America/Mexico_City
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psqa_secret_password" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  plataforma-sqa:
+    build: .
+    container_name: sqa-app
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql:3306/plataforma_sqa?createDatabaseIfNotExist=true&serverTimezone=America/Mexico_City
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: sqa_secret_password
+      SQA_EVIDENCIAS_DIRECTORIO: /app/data/evidencias
+    volumes:
+      - ./data/evidencias:/app/data/evidencias
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
