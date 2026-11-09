@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Umbrales.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.dominio.modelo</a> &gt; <span class="el_source">Umbrales.java</span></div><h1>Umbrales.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.dominio.modelo;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import mx.uaz.sqa.dominio.excepcion.UmbralesInvalidosException;
+
+/**
+ * Umbrales de aceptación de una métrica (RS-03): límite óptimo y límite crítico,
+ * interpretados según el {@link SentidoMetrica}.
+ *
+ * &lt;p&gt;Ejemplo &quot;mayor es mejor&quot; con óptimo = 80 y crítico = 60:
+ * Verde ≥ 80, Amarillo ≥ 60 y &amp;lt; 80, Rojo &amp;lt; 60.&lt;/p&gt;
+ */
+@Embeddable
+public class Umbrales {
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;umbral_sentido&quot;, nullable = false, length = 20)
+    private SentidoMetrica sentido;
+
+    @Column(name = &quot;umbral_optimo&quot;, nullable = false)
+    private double limiteOptimo;
+
+    @Column(name = &quot;umbral_critico&quot;, nullable = false)
+    private double limiteCritico;
+
+<span class="fc" id="L29">    protected Umbrales() {</span>
+        // Requerido por JPA
+<span class="fc" id="L31">    }</span>
+
+<span class="fc" id="L33">    private Umbrales(SentidoMetrica sentido, double limiteOptimo, double limiteCritico) {</span>
+<span class="fc" id="L34">        this.sentido = sentido;</span>
+<span class="fc" id="L35">        this.limiteOptimo = limiteOptimo;</span>
+<span class="fc" id="L36">        this.limiteCritico = limiteCritico;</span>
+<span class="fc" id="L37">    }</span>
+
+    /**
+     * Crea umbrales validando que estén completos, dentro del dominio de la unidad y que
+     * no se crucen (CU02 paso 3 y flujo alterno 3a).
+     */
+    public static Umbrales definir(SentidoMetrica sentido, Double limiteOptimo, Double limiteCritico,
+                                   UnidadMedida unidad) {
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (sentido == null) {</span>
+<span class="fc" id="L46">            throw new UmbralesInvalidosException(&quot;Selecciona el sentido de la métrica&quot;, &quot;sentido&quot;);</span>
+        }
+<span class="pc bpc" id="L48" title="1 of 4 branches missed.">        if (limiteOptimo == null || !Double.isFinite(limiteOptimo)) {</span>
+<span class="fc" id="L49">            throw new UmbralesInvalidosException(&quot;El límite óptimo es obligatorio y debe ser numérico&quot;, &quot;limiteOptimo&quot;);</span>
+        }
+<span class="pc bpc" id="L51" title="1 of 4 branches missed.">        if (limiteCritico == null || !Double.isFinite(limiteCritico)) {</span>
+<span class="fc" id="L52">            throw new UmbralesInvalidosException(&quot;El límite crítico es obligatorio y debe ser numérico&quot;, &quot;limiteCritico&quot;);</span>
+        }
+<span class="pc bpc" id="L54" title="1 of 4 branches missed.">        if (unidad != null &amp;&amp; !unidad.admite(limiteOptimo)) {</span>
+<span class="fc" id="L55">            throw new UmbralesInvalidosException(&quot;El límite óptimo no es válido: &quot; + unidad.reglaDeDominio(), &quot;limiteOptimo&quot;);</span>
+        }
+<span class="pc bpc" id="L57" title="1 of 4 branches missed.">        if (unidad != null &amp;&amp; !unidad.admite(limiteCritico)) {</span>
+<span class="fc" id="L58">            throw new UmbralesInvalidosException(&quot;El límite crítico no es válido: &quot; + unidad.reglaDeDominio(), &quot;limiteCritico&quot;);</span>
+        }
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (!sentido.limitesCoherentes(limiteOptimo, limiteCritico)) {</span>
+<span class="fc" id="L61">            throw new UmbralesInvalidosException(&quot;Conflicto numérico en los umbrales: con \&quot;&quot; + sentido.getEtiqueta()</span>
+<span class="fc" id="L62">                    + &quot;\&quot; &quot; + sentido.reglaDeCoherencia() + &quot; (óptimo = &quot; + limiteOptimo</span>
+                    + &quot;, crítico = &quot; + limiteCritico + &quot;)&quot;, &quot;limiteCritico&quot;);
+        }
+<span class="fc" id="L65">        return new Umbrales(sentido, limiteOptimo, limiteCritico);</span>
+    }
+
+    /** RS-05: compara el valor contra los límites y devuelve el color del semáforo. */
+    public EstadoSemaforo evaluar(double valor) {
+<span class="fc" id="L70">        return sentido.evaluar(valor, limiteOptimo, limiteCritico);</span>
+    }
+
+    public String rangoVerde(UnidadMedida unidad) {
+<span class="fc" id="L74">        return sentido.rangoVerde(unidad.formatear(limiteOptimo), unidad.formatear(limiteCritico));</span>
+    }
+
+    public String rangoAmarillo(UnidadMedida unidad) {
+<span class="fc" id="L78">        return sentido.rangoAmarillo(unidad.formatear(limiteOptimo), unidad.formatear(limiteCritico));</span>
+    }
+
+    public String rangoRojo(UnidadMedida unidad) {
+<span class="fc" id="L82">        return sentido.rangoRojo(unidad.formatear(limiteOptimo), unidad.formatear(limiteCritico));</span>
+    }
+
+    public SentidoMetrica getSentido() {
+<span class="fc" id="L86">        return sentido;</span>
+    }
+
+    public double getLimiteOptimo() {
+<span class="fc" id="L90">        return limiteOptimo;</span>
+    }
+
+    public double getLimiteCritico() {
+<span class="fc" id="L94">        return limiteCritico;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

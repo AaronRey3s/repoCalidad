@@ -1,0 +1,52 @@
+name: CI · Quality Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calidad:
+    name: Compilar, probar y verificar cobertura
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    defaults:
+      run:
+        working-directory: plataforma-sqa
+    steps:
+      - name: Obtener el código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Pruebas unitarias, de integración, de arquitectura y cobertura (JaCoCo >= 70 %)
+        run: mvn -B -ntp verify
+
+      - name: Publicar evidencia (reporte JaCoCo y resultados de pruebas)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-calidad
+          path: |
+            plataforma-sqa/target/site/jacoco/
+            plataforma-sqa/target/surefire-reports/
+
+      - name: Análisis estático en SonarCloud
+        if: ${{ env.SONAR_TOKEN != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn -B -ntp org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.organization=benduolo253 -Dsonar.projectKey=BenduOlo253_sqa
+

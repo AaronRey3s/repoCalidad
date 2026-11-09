@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ResumenTecnicas.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.servicio.dto</a> &gt; <span class="el_source">ResumenTecnicas.java</span></div><h1>ResumenTecnicas.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.servicio.dto;
+
+import java.util.List;
+import mx.uaz.sqa.dominio.modelo.EstadoTecnica;
+import mx.uaz.sqa.dominio.modelo.TecnicaSqa;
+import mx.uaz.sqa.dominio.modelo.UnidadMedida;
+
+/**
+ * Cobertura de técnicas SQA del proyecto (RS-07, RS-09).
+ */
+<span class="fc" id="L11">public record ResumenTecnicas(int total, int pendientes, int enProgreso, int aplicadas, int fallidas,</span>
+                              Double porcentajeAplicadas) {
+
+    public static ResumenTecnicas desde(List&lt;TecnicaSqa&gt; tecnicas, Double porcentajeAplicadas) {
+<span class="fc" id="L15">        return new ResumenTecnicas(tecnicas.size(),</span>
+<span class="fc" id="L16">                contar(tecnicas, EstadoTecnica.PENDIENTE),</span>
+<span class="fc" id="L17">                contar(tecnicas, EstadoTecnica.EN_PROGRESO),</span>
+<span class="fc" id="L18">                contar(tecnicas, EstadoTecnica.APLICADO),</span>
+<span class="fc" id="L19">                contar(tecnicas, EstadoTecnica.FALLIDO),</span>
+                porcentajeAplicadas);
+    }
+
+    private static int contar(List&lt;TecnicaSqa&gt; tecnicas, EstadoTecnica estado) {
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        return (int) tecnicas.stream().filter(t -&gt; t.getEstado() == estado).count();</span>
+    }
+
+    public String porcentajeTexto() {
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        return porcentajeAplicadas == null ? &quot;Sin técnicas&quot; : UnidadMedida.PORCENTAJE.formatear(porcentajeAplicadas);</span>
+    }
+
+    /** Ancho (0–100) de la barra de progreso en la vista. */
+    public long anchoBarra() {
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        return porcentajeAplicadas == null ? 0 : Math.round(porcentajeAplicadas);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

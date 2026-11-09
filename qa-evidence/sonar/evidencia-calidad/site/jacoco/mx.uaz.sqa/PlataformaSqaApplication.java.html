@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlataformaSqaApplication.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa</a> &gt; <span class="el_source">PlataformaSqaApplication.java</span></div><h1>PlataformaSqaApplication.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+/**
+ * Punto de entrada de la Plataforma de Monitoreo y Gestión SQA.
+ *
+ * &lt;p&gt;Arquitectura orientada a objetos en capas (RNF-06):&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code presentacion}: controladores web, formularios y vistas Thymeleaf.&lt;/li&gt;
+ *   &lt;li&gt;{@code servicio}: casos de uso CU01–CU06 (lógica de aplicación).&lt;/li&gt;
+ *   &lt;li&gt;{@code dominio}: entidades y reglas de negocio puras (umbrales, semáforo, evidencias).&lt;/li&gt;
+ *   &lt;li&gt;{@code persistencia}: repositorios JPA y almacenamiento de archivos de evidencia.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+@SpringBootApplication
+<span class="fc" id="L18">public class PlataformaSqaApplication {</span>
+
+    public static void main(String[] args) {
+        // Hibernate y Mockito usan Byte Buddy. En JDK más nuevos que los que Byte Buddy
+        // reconoce oficialmente (p. ej. JDK 25) esta bandera evita que falle el arranque.
+        // En JDK 17/21 no tiene ningún efecto.
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        if (System.getProperty(&quot;net.bytebuddy.experimental&quot;) == null) {</span>
+<span class="nc" id="L25">            System.setProperty(&quot;net.bytebuddy.experimental&quot;, &quot;true&quot;);</span>
+        }
+<span class="nc" id="L27">        SpringApplication.run(PlataformaSqaApplication.class, args);</span>
+<span class="nc" id="L28">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

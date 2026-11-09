@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EstadoTecnica.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.dominio.modelo</a> &gt; <span class="el_source">EstadoTecnica.java</span></div><h1>EstadoTecnica.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.dominio.modelo;
+
+/**
+ * Estado de ejecución de una técnica SQA asignada (RS-07).
+ * Solo el estado {@link #APLICADO} exige evidencia (RS-08).
+ */
+<span class="fc" id="L7">public enum EstadoTecnica {</span>
+
+<span class="fc" id="L9">    PENDIENTE(&quot;Pendiente&quot;, &quot;pendiente&quot;),</span>
+<span class="fc" id="L10">    EN_PROGRESO(&quot;En progreso&quot;, &quot;progreso&quot;),</span>
+<span class="fc" id="L11">    APLICADO(&quot;Aplicado&quot;, &quot;aplicado&quot;) {</span>
+        @Override
+        public boolean requiereEvidencia() {
+<span class="fc" id="L14">            return true;</span>
+        }
+    },
+<span class="fc" id="L17">    FALLIDO(&quot;Fallido&quot;, &quot;fallido&quot;);</span>
+
+    private final String etiqueta;
+    private final String claseCss;
+
+<span class="fc" id="L22">    EstadoTecnica(String etiqueta, String claseCss) {</span>
+<span class="fc" id="L23">        this.etiqueta = etiqueta;</span>
+<span class="fc" id="L24">        this.claseCss = claseCss;</span>
+<span class="fc" id="L25">    }</span>
+
+    public boolean requiereEvidencia() {
+<span class="fc" id="L28">        return false;</span>
+    }
+
+    public String getEtiqueta() {
+<span class="fc" id="L32">        return etiqueta;</span>
+    }
+
+    public String getClaseCss() {
+<span class="fc" id="L36">        return claseCss;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

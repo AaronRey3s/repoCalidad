@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MetricaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.servicio</a> &gt; <span class="el_source">MetricaService.java</span></div><h1>MetricaService.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.servicio;
+
+import java.util.List;
+import mx.uaz.sqa.dominio.excepcion.MetricaDuplicadaException;
+import mx.uaz.sqa.dominio.excepcion.OperacionNoPermitidaException;
+import mx.uaz.sqa.dominio.excepcion.RecursoNoEncontradoException;
+import mx.uaz.sqa.dominio.modelo.Metrica;
+import mx.uaz.sqa.dominio.modelo.Proyecto;
+import mx.uaz.sqa.persistencia.MedicionRepository;
+import mx.uaz.sqa.persistencia.MetricaRepository;
+import mx.uaz.sqa.persistencia.ProyectoRepository;
+import mx.uaz.sqa.servicio.dto.DatosMetrica;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * CU02 – Configurar Métricas de Calidad del Proyecto (RS-03).
+ */
+@Service
+@Transactional
+public class MetricaService {
+
+    private final ProyectoRepository proyectos;
+    private final MetricaRepository metricas;
+    private final MedicionRepository mediciones;
+
+<span class="fc" id="L27">    public MetricaService(ProyectoRepository proyectos, MetricaRepository metricas, MedicionRepository mediciones) {</span>
+<span class="fc" id="L28">        this.proyectos = proyectos;</span>
+<span class="fc" id="L29">        this.metricas = metricas;</span>
+<span class="fc" id="L30">        this.mediciones = mediciones;</span>
+<span class="fc" id="L31">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;Metrica&gt; listarPorProyecto(Long proyectoId) {
+<span class="fc" id="L35">        return metricas.findByProyectoIdOrderByNombreAsc(proyectoId);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Metrica obtener(Long metricaId) {
+<span class="fc" id="L40">        return metricas.findById(metricaId)</span>
+<span class="fc" id="L41">                .orElseThrow(() -&gt; RecursoNoEncontradoException.de(&quot;la métrica&quot;, metricaId));</span>
+    }
+
+    /** RS-03: registra la métrica con unidad, periodicidad y umbrales Verde/Amarillo/Rojo. */
+    public Metrica configurar(Long proyectoId, DatosMetrica datos) {
+<span class="fc" id="L46">        Proyecto proyecto = proyectos.findById(proyectoId)</span>
+<span class="fc" id="L47">                .orElseThrow(() -&gt; RecursoNoEncontradoException.de(&quot;el proyecto&quot;, proyectoId));</span>
+<span class="fc" id="L48">        proyecto.verificarActivo();</span>
+<span class="fc" id="L49">        Metrica metrica = new Metrica(proyecto, datos.nombre(), datos.unidad(), datos.frecuencia(),</span>
+<span class="fc" id="L50">                datos.sentido(), datos.limiteOptimo(), datos.limiteCritico());</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (metricas.existsByProyectoIdAndNombreIgnoreCase(proyectoId, metrica.getNombre())) {</span>
+<span class="fc" id="L52">            throw new MetricaDuplicadaException(&quot;El proyecto ya tiene una métrica llamada \&quot;&quot;</span>
+<span class="fc" id="L53">                    + metrica.getNombre() + &quot;\&quot;&quot;, &quot;nombre&quot;);</span>
+        }
+<span class="fc" id="L55">        return metricas.save(metrica);</span>
+    }
+
+    /**
+     * Elimina una métrica capturada por error. Solo se permite si no tiene mediciones,
+     * porque el histórico es inmutable (RNF-03).
+     *
+     * @return id del proyecto al que pertenecía la métrica
+     */
+    public Long eliminar(Long metricaId) {
+<span class="fc" id="L65">        Metrica metrica = obtener(metricaId);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (mediciones.countByMetricaId(metricaId) &gt; 0) {</span>
+<span class="fc" id="L67">            throw new OperacionNoPermitidaException(&quot;No se puede eliminar \&quot;&quot; + metrica.getNombre()</span>
+                    + &quot;\&quot;: ya tiene mediciones registradas y el histórico es inmutable (RNF-03)&quot;);
+        }
+<span class="fc" id="L70">        Long proyectoId = metrica.getProyecto().getId();</span>
+<span class="fc" id="L71">        metricas.delete(metrica);</span>
+<span class="fc" id="L72">        return proyectoId;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

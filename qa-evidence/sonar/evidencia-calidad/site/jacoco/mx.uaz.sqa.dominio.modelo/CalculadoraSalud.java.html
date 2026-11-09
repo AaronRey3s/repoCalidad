@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CalculadoraSalud.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.dominio.modelo</a> &gt; <span class="el_source">CalculadoraSalud.java</span></div><h1>CalculadoraSalud.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.dominio.modelo;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Servicio de dominio que calcula el índice global de cumplimiento y el dictamen de salud
+ * (RS-09, RS-10, CU06 paso 2).
+ *
+ * &lt;p&gt;&lt;b&gt;Fórmula (decisión de diseño del equipo, ajustable):&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Puntaje por métrica con datos: Verde = 100, Amarillo = 50, Rojo = 0.&lt;/li&gt;
+ *   &lt;li&gt;Índice de métricas = promedio de los puntajes de las métricas con al menos una medición.&lt;/li&gt;
+ *   &lt;li&gt;Porcentaje de técnicas = técnicas en estado Aplicado / técnicas asignadas × 100.&lt;/li&gt;
+ *   &lt;li&gt;Índice global = promedio de los componentes que tengan datos.&lt;/li&gt;
+ *   &lt;li&gt;Dictamen: ≥ 80 Saludable, ≥ 60 En riesgo, &amp;lt; 60 Crítico; sin componentes = Sin datos.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+<span class="fc" id="L20">public class CalculadoraSalud {</span>
+
+    public static final double UMBRAL_SALUDABLE = 80.0;
+    public static final double UMBRAL_EN_RIESGO = 60.0;
+
+    public IndiceSalud calcular(Collection&lt;EstadoSemaforo&gt; estadosMetricas,
+                                Collection&lt;EstadoTecnica&gt; estadosTecnicas) {
+<span class="fc" id="L27">        Double indiceMetricas = indiceMetricas(estadosMetricas);</span>
+<span class="fc" id="L28">        Double porcentajeTecnicas = porcentajeTecnicasAplicadas(estadosTecnicas);</span>
+<span class="fc" id="L29">        Double indiceGlobal = promedioDisponible(indiceMetricas, porcentajeTecnicas);</span>
+<span class="fc" id="L30">        return new IndiceSalud(redondear(indiceMetricas), redondear(porcentajeTecnicas),</span>
+<span class="fc" id="L31">                redondear(indiceGlobal), dictaminar(indiceGlobal));</span>
+    }
+
+    public Double indiceMetricas(Collection&lt;EstadoSemaforo&gt; estados) {
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (estados == null) {</span>
+<span class="fc" id="L36">            return null;</span>
+        }
+<span class="fc" id="L38">        List&lt;EstadoSemaforo&gt; conDatos = estados.stream()</span>
+<span class="fc" id="L39">                .filter(Objects::nonNull)</span>
+<span class="fc" id="L40">                .filter(EstadoSemaforo::tieneDatos)</span>
+<span class="fc" id="L41">                .toList();</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (conDatos.isEmpty()) {</span>
+<span class="fc" id="L43">            return null;</span>
+        }
+<span class="fc" id="L45">        return conDatos.stream().mapToInt(EstadoSemaforo::getPuntaje).average().orElse(0);</span>
+    }
+
+    public Double porcentajeTecnicasAplicadas(Collection&lt;EstadoTecnica&gt; estados) {
+<span class="fc bfc" id="L49" title="All 4 branches covered.">        if (estados == null || estados.isEmpty()) {</span>
+<span class="fc" id="L50">            return null;</span>
+        }
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        long aplicadas = estados.stream().filter(e -&gt; e == EstadoTecnica.APLICADO).count();</span>
+<span class="fc" id="L53">        return aplicadas * 100.0 / estados.size();</span>
+    }
+
+    public Dictamen dictaminar(Double indiceGlobal) {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (indiceGlobal == null) {</span>
+<span class="fc" id="L58">            return Dictamen.SIN_DATOS;</span>
+        }
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (indiceGlobal &gt;= UMBRAL_SALUDABLE) {</span>
+<span class="fc" id="L61">            return Dictamen.SALUDABLE;</span>
+        }
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (indiceGlobal &gt;= UMBRAL_EN_RIESGO) {</span>
+<span class="fc" id="L64">            return Dictamen.EN_RIESGO;</span>
+        }
+<span class="fc" id="L66">        return Dictamen.CRITICO;</span>
+    }
+
+    private static Double promedioDisponible(Double a, Double b) {
+<span class="fc bfc" id="L70" title="All 4 branches covered.">        if (a == null &amp;&amp; b == null) {</span>
+<span class="fc" id="L71">            return null;</span>
+        }
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (a == null) {</span>
+<span class="fc" id="L74">            return b;</span>
+        }
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (b == null) {</span>
+<span class="fc" id="L77">            return a;</span>
+        }
+<span class="fc" id="L79">        return (a + b) / 2.0;</span>
+    }
+
+    private static Double redondear(Double valor) {
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        return valor == null ? null : Math.round(valor * 10.0) / 10.0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

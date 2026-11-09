@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TecnicaController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.presentacion</a> &gt; <span class="el_source">TecnicaController.java</span></div><h1>TecnicaController.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.presentacion;
+
+import jakarta.validation.Valid;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import mx.uaz.sqa.dominio.excepcion.ReglaNegocioException;
+import mx.uaz.sqa.dominio.modelo.CategoriaTecnica;
+import mx.uaz.sqa.dominio.modelo.EstadoTecnica;
+import mx.uaz.sqa.dominio.modelo.TecnicaSqa;
+import mx.uaz.sqa.presentacion.formulario.EstadoTecnicaForm;
+import mx.uaz.sqa.presentacion.formulario.TecnicaForm;
+import mx.uaz.sqa.servicio.ProyectoService;
+import mx.uaz.sqa.servicio.TecnicaSqaService;
+import mx.uaz.sqa.servicio.UsuarioService;
+import mx.uaz.sqa.servicio.dto.ArchivoAdjunto;
+import mx.uaz.sqa.servicio.dto.ArchivoDescargable;
+import mx.uaz.sqa.servicio.dto.ProyectoResumen;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+/**
+ * CU04 – Gestionar Ejecución y Evidencia de Técnica SQA.
+ */
+@Controller
+public class TecnicaController extends ControladorBase {
+
+    private final ProyectoService proyectoService;
+    private final TecnicaSqaService tecnicaService;
+    private final UsuarioService usuarioService;
+
+    public TecnicaController(ProyectoService proyectoService, TecnicaSqaService tecnicaService,
+<span class="fc" id="L47">                             UsuarioService usuarioService) {</span>
+<span class="fc" id="L48">        this.proyectoService = proyectoService;</span>
+<span class="fc" id="L49">        this.tecnicaService = tecnicaService;</span>
+<span class="fc" id="L50">        this.usuarioService = usuarioService;</span>
+<span class="fc" id="L51">    }</span>
+
+    @GetMapping(&quot;/proyectos/{proyectoId}/tecnicas/nueva&quot;)
+    @PreAuthorize(&quot;hasRole('LIDER_SQA')&quot;)
+    public String nueva(@PathVariable(&quot;proyectoId&quot;) Long proyectoId, Model model) {
+<span class="fc" id="L56">        model.addAttribute(&quot;form&quot;, new TecnicaForm());</span>
+<span class="fc" id="L57">        return mostrarFormularioAsignacion(proyectoId, model);</span>
+    }
+
+    @PostMapping(&quot;/proyectos/{proyectoId}/tecnicas&quot;)
+    @PreAuthorize(&quot;hasRole('LIDER_SQA')&quot;)
+    public String asignar(@PathVariable(&quot;proyectoId&quot;) Long proyectoId, @Valid @ModelAttribute(&quot;form&quot;) TecnicaForm form,
+                          BindingResult resultado, Principal principal, Model model, RedirectAttributes atributos) {
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (!resultado.hasErrors()) {</span>
+            try {
+<span class="fc" id="L66">                TecnicaSqa tecnica = tecnicaService.asignar(proyectoId, form.aDatos(), principal.getName());</span>
+<span class="fc" id="L67">                exito(atributos, &quot;Técnica \&quot;&quot; + tecnica.getNombre() + &quot;\&quot; asignada en estado Pendiente&quot;);</span>
+<span class="fc" id="L68">                return &quot;redirect:/proyectos/&quot; + proyectoId;</span>
+<span class="nc" id="L69">            } catch (ReglaNegocioException e) {</span>
+<span class="nc" id="L70">                registrarError(resultado, e);</span>
+            }
+        }
+<span class="nc" id="L73">        return mostrarFormularioAsignacion(proyectoId, model);</span>
+    }
+
+    @GetMapping(&quot;/tecnicas/{id}&quot;)
+    public String detalle(@PathVariable(&quot;id&quot;) Long id, Model model) {
+<span class="fc" id="L78">        EstadoTecnicaForm form = new EstadoTecnicaForm();</span>
+<span class="fc" id="L79">        form.setEstado(tecnicaService.obtener(id).getEstado());</span>
+<span class="fc" id="L80">        model.addAttribute(&quot;form&quot;, form);</span>
+<span class="fc" id="L81">        return mostrarDetalle(id, model);</span>
+    }
+
+    @PostMapping(&quot;/tecnicas/{id}/estado&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LIDER_SQA', 'DESARROLLADOR')&quot;)
+    public String actualizarEstado(@PathVariable(&quot;id&quot;) Long id, @Valid @ModelAttribute(&quot;form&quot;) EstadoTecnicaForm form,
+                                   BindingResult resultado,
+                                   @RequestParam(value = &quot;archivo&quot;, required = false) MultipartFile archivo,
+                                   Principal principal, Model model, RedirectAttributes atributos) {
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (!resultado.hasErrors()) {</span>
+            try {
+<span class="fc" id="L92">                TecnicaSqa tecnica = tecnicaService.actualizarEstado(id, form.getEstado(), form.getEvidenciaUrl(),</span>
+<span class="fc" id="L93">                        aAdjunto(archivo), principal.getName());</span>
+<span class="fc" id="L94">                exito(atributos, &quot;Estado actualizado a \&quot;&quot; + tecnica.getEstado().getEtiqueta()</span>
+                        + &quot;\&quot;. Cobertura de técnicas recalculada.&quot;);
+<span class="fc" id="L96">                return &quot;redirect:/tecnicas/&quot; + id;</span>
+<span class="fc" id="L97">            } catch (ReglaNegocioException e) {</span>
+<span class="fc" id="L98">                registrarError(resultado, e);</span>
+            }
+        }
+<span class="fc" id="L101">        return mostrarDetalle(id, model);</span>
+    }
+
+    @GetMapping(&quot;/tecnicas/{id}/evidencia&quot;)
+    public ResponseEntity&lt;byte[]&gt; descargarEvidencia(@PathVariable(&quot;id&quot;) Long id) {
+<span class="fc" id="L106">        ArchivoDescargable archivo = tecnicaService.descargarEvidencia(id);</span>
+<span class="fc" id="L107">        return ResponseEntity.ok()</span>
+<span class="fc" id="L108">                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()</span>
+<span class="fc" id="L109">                        .filename(archivo.nombre(), StandardCharsets.UTF_8).build().toString())</span>
+<span class="fc" id="L110">                .contentType(MediaType.APPLICATION_OCTET_STREAM)</span>
+<span class="fc" id="L111">                .body(archivo.contenido());</span>
+    }
+
+    private String mostrarFormularioAsignacion(Long proyectoId, Model model) {
+<span class="fc" id="L115">        model.addAttribute(&quot;proyecto&quot;, proyectoService.obtenerResumen(proyectoId));</span>
+<span class="fc" id="L116">        model.addAttribute(&quot;categorias&quot;, CategoriaTecnica.values());</span>
+<span class="fc" id="L117">        model.addAttribute(&quot;usuarios&quot;, usuarioService.listar());</span>
+<span class="fc" id="L118">        return &quot;tecnicas/formulario&quot;;</span>
+    }
+
+    private String mostrarDetalle(Long id, Model model) {
+<span class="fc" id="L122">        TecnicaSqa tecnica = tecnicaService.obtener(id);</span>
+<span class="fc" id="L123">        model.addAttribute(&quot;tecnica&quot;, tecnica);</span>
+<span class="fc" id="L124">        model.addAttribute(&quot;proyecto&quot;, ProyectoResumen.desde(tecnica.getProyecto()));</span>
+<span class="fc" id="L125">        model.addAttribute(&quot;historial&quot;, tecnicaService.historial(id));</span>
+<span class="fc" id="L126">        model.addAttribute(&quot;estados&quot;, EstadoTecnica.values());</span>
+<span class="fc" id="L127">        return &quot;tecnicas/detalle&quot;;</span>
+    }
+
+    private static ArchivoAdjunto aAdjunto(MultipartFile archivo) {
+<span class="pc bpc" id="L131" title="1 of 4 branches missed.">        if (archivo == null || archivo.isEmpty()) {</span>
+<span class="fc" id="L132">            return null;</span>
+        }
+        try {
+<span class="fc" id="L135">            return new ArchivoAdjunto(archivo.getOriginalFilename(), archivo.getBytes());</span>
+<span class="nc" id="L136">        } catch (IOException e) {</span>
+<span class="nc" id="L137">            throw new UncheckedIOException(&quot;No fue posible leer el archivo adjunto&quot;, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

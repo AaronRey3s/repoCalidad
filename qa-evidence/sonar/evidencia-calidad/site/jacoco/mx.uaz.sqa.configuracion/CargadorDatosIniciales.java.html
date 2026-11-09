@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CargadorDatosIniciales.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.configuracion</a> &gt; <span class="el_source">CargadorDatosIniciales.java</span></div><h1>CargadorDatosIniciales.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.configuracion;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import mx.uaz.sqa.dominio.modelo.CategoriaTecnica;
+import mx.uaz.sqa.dominio.modelo.EstadoTecnica;
+import mx.uaz.sqa.dominio.modelo.Evidencia;
+import mx.uaz.sqa.dominio.modelo.Frecuencia;
+import mx.uaz.sqa.dominio.modelo.Metrica;
+import mx.uaz.sqa.dominio.modelo.Periodo;
+import mx.uaz.sqa.dominio.modelo.Proyecto;
+import mx.uaz.sqa.dominio.modelo.Rol;
+import mx.uaz.sqa.dominio.modelo.SentidoMetrica;
+import mx.uaz.sqa.dominio.modelo.TecnicaSqa;
+import mx.uaz.sqa.dominio.modelo.UnidadMedida;
+import mx.uaz.sqa.dominio.modelo.Usuario;
+import mx.uaz.sqa.persistencia.CambioEstadoTecnicaRepository;
+import mx.uaz.sqa.persistencia.MedicionRepository;
+import mx.uaz.sqa.persistencia.MetricaRepository;
+import mx.uaz.sqa.persistencia.ProyectoRepository;
+import mx.uaz.sqa.persistencia.TecnicaSqaRepository;
+import mx.uaz.sqa.persistencia.UsuarioRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Carga inicial:
+ * &lt;ul&gt;
+ *   &lt;li&gt;Usuarios de prueba, uno por rol (siempre que la tabla de usuarios esté vacía).&lt;/li&gt;
+ *   &lt;li&gt;Un proyecto de demostración con métricas, mediciones y técnicas de EJEMPLO
+ *       (solo si {@code sqa.demo.cargar-datos=true} y no hay proyectos). Los valores son
+ *       ilustrativos: reemplácenlos con los datos reales de JaCoCo, GitHub Issues, etc.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+@Component
+public class CargadorDatosIniciales implements CommandLineRunner {
+
+<span class="fc" id="L44">    private static final Logger LOG = LoggerFactory.getLogger(CargadorDatosIniciales.class);</span>
+    private static final String NOTA_DEMO = &quot;Dato de ejemplo (demo)&quot;;
+
+    private final UsuarioRepository usuarios;
+    private final ProyectoRepository proyectos;
+    private final MetricaRepository metricas;
+    private final MedicionRepository mediciones;
+    private final TecnicaSqaRepository tecnicas;
+    private final CambioEstadoTecnicaRepository cambios;
+    private final PasswordEncoder codificador;
+    private final Clock reloj;
+    private final boolean cargarDemo;
+
+    public CargadorDatosIniciales(UsuarioRepository usuarios, ProyectoRepository proyectos,
+                                  MetricaRepository metricas, MedicionRepository mediciones,
+                                  TecnicaSqaRepository tecnicas, CambioEstadoTecnicaRepository cambios,
+                                  PasswordEncoder codificador, Clock reloj,
+<span class="fc" id="L61">                                  @Value(&quot;${sqa.demo.cargar-datos:false}&quot;) boolean cargarDemo) {</span>
+<span class="fc" id="L62">        this.usuarios = usuarios;</span>
+<span class="fc" id="L63">        this.proyectos = proyectos;</span>
+<span class="fc" id="L64">        this.metricas = metricas;</span>
+<span class="fc" id="L65">        this.mediciones = mediciones;</span>
+<span class="fc" id="L66">        this.tecnicas = tecnicas;</span>
+<span class="fc" id="L67">        this.cambios = cambios;</span>
+<span class="fc" id="L68">        this.codificador = codificador;</span>
+<span class="fc" id="L69">        this.reloj = reloj;</span>
+<span class="fc" id="L70">        this.cargarDemo = cargarDemo;</span>
+<span class="fc" id="L71">    }</span>
+
+    @Override
+    @Transactional
+    public void run(String... args) {
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (usuarios.count() == 0) {</span>
+<span class="fc" id="L77">            crearUsuario(&quot;lider&quot;, &quot;Líder de Proyecto (demo)&quot;, &quot;lider123&quot;, Rol.LIDER_PROYECTO);</span>
+<span class="fc" id="L78">            crearUsuario(&quot;sqa&quot;, &quot;Líder SQA (demo)&quot;, &quot;sqa123&quot;, Rol.LIDER_SQA);</span>
+<span class="fc" id="L79">            crearUsuario(&quot;dev&quot;, &quot;Desarrollador (demo)&quot;, &quot;dev123&quot;, Rol.DESARROLLADOR);</span>
+<span class="fc" id="L80">            crearUsuario(&quot;stake&quot;, &quot;Stakeholder (demo)&quot;, &quot;stake123&quot;, Rol.STAKEHOLDER);</span>
+<span class="fc" id="L81">            LOG.info(&quot;Usuarios de prueba creados: lider/lider123, sqa/sqa123, dev/dev123, stake/stake123&quot;);</span>
+        }
+<span class="pc bpc" id="L83" title="3 of 4 branches missed.">        if (cargarDemo &amp;&amp; proyectos.count() == 0) {</span>
+<span class="nc" id="L84">            cargarProyectoDemo();</span>
+<span class="nc" id="L85">            LOG.info(&quot;Proyecto de demostración cargado (sqa.demo.cargar-datos=true)&quot;);</span>
+        }
+<span class="fc" id="L87">    }</span>
+
+    private void crearUsuario(String username, String nombre, String contrasena, Rol rol) {
+<span class="fc" id="L90">        usuarios.save(new Usuario(username, nombre, codificador.encode(contrasena), rol));</span>
+<span class="fc" id="L91">    }</span>
+
+    private void cargarProyectoDemo() {
+<span class="nc" id="L94">        LocalDateTime ahora = LocalDateTime.now(reloj);</span>
+<span class="nc" id="L95">        LocalDate hoy = ahora.toLocalDate();</span>
+<span class="nc" id="L96">        Proyecto proyecto = proyectos.save(new Proyecto(</span>
+                &quot;Plataforma de Monitoreo SQA (demo)&quot;,
+                &quot;Proyecto de ejemplo: el equipo monitorea su propio desarrollo (dogfooding, sección 4.4 del SRS).&quot;,
+                &quot;Java 17, Spring Boot, Thymeleaf, H2, JUnit 5, JaCoCo&quot;,
+<span class="nc" id="L100">                Periodo.de(&quot;Periodo demo&quot;, hoy.minusDays(60), hoy.plusDays(45)),</span>
+                ahora));
+
+<span class="nc" id="L103">        Metrica cobertura = metricas.save(new Metrica(proyecto, &quot;Cobertura de código (JaCoCo)&quot;,</span>
+<span class="nc" id="L104">                UnidadMedida.PORCENTAJE, Frecuencia.POR_SPRINT, SentidoMetrica.MAYOR_ES_MEJOR, 70.0, 50.0));</span>
+<span class="nc" id="L105">        Metrica exitoPruebas = metricas.save(new Metrica(proyecto, &quot;Tasa de éxito de pruebas&quot;,</span>
+<span class="nc" id="L106">                UnidadMedida.PORCENTAJE, Frecuencia.POR_SPRINT, SentidoMetrica.MAYOR_ES_MEJOR, 95.0, 80.0));</span>
+<span class="nc" id="L107">        Metrica densidad = metricas.save(new Metrica(proyecto, &quot;Densidad de defectos (defectos por CU)&quot;,</span>
+<span class="nc" id="L108">                UnidadMedida.RAZON, Frecuencia.SEMANAL, SentidoMetrica.MENOR_ES_MEJOR, 0.5, 1.5));</span>
+<span class="nc" id="L109">        Metrica criticos = metricas.save(new Metrica(proyecto, &quot;Defectos críticos abiertos&quot;,</span>
+<span class="nc" id="L110">                UnidadMedida.CONTEO, Frecuencia.SEMANAL, SentidoMetrica.MENOR_ES_MEJOR, 0.0, 2.0));</span>
+<span class="nc" id="L111">        metricas.save(new Metrica(proyecto, &quot;Complejidad ciclomática promedio&quot;,</span>
+<span class="nc" id="L112">                UnidadMedida.RAZON, Frecuencia.SEMANAL, SentidoMetrica.MENOR_ES_MEJOR, 5.0, 10.0));</span>
+
+<span class="nc" id="L114">        medir(cobertura, ahora, 21, 38.0, 14, 55.0, 3, 72.0);</span>
+<span class="nc" id="L115">        medir(exitoPruebas, ahora, 21, 78.0, 14, 88.0, 3, 96.0);</span>
+<span class="nc" id="L116">        medir(densidad, ahora, 21, 2.0, 14, 1.6, 3, 1.2);</span>
+<span class="nc" id="L117">        medir(criticos, ahora, 21, 5.0, 14, 4.0, 3, 3.0);</span>
+
+<span class="nc" id="L119">        tecnica(proyecto, &quot;Revisión por pares de Pull Requests (IEEE 1028)&quot;, CategoriaTecnica.REVISION_TECNICA_PARES,</span>
+                &quot;sqa&quot;, EstadoTecnica.APLICADO, &quot;https://github.com/riagalv/repoCalidad/pulls&quot;, ahora);
+<span class="nc" id="L121">        tecnica(proyecto, &quot;Pruebas unitarias automatizadas (JUnit 5 + JaCoCo)&quot;, CategoriaTecnica.PRUEBAS_SOFTWARE,</span>
+                &quot;dev&quot;, EstadoTecnica.EN_PROGRESO, null, ahora);
+<span class="nc" id="L123">        tecnica(proyecto, &quot;Análisis estático (SonarCloud)&quot;, CategoriaTecnica.ANALISIS_ESTATICO,</span>
+                &quot;sqa&quot;, EstadoTecnica.PENDIENTE, null, ahora);
+<span class="nc" id="L125">        tecnica(proyecto, &quot;Auditoría de proceso (IEEE 730)&quot;, CategoriaTecnica.AUDITORIA_PROCESO,</span>
+                &quot;lider&quot;, EstadoTecnica.PENDIENTE, null, ahora);
+<span class="nc" id="L127">    }</span>
+
+    /** Registra pares (díasAtrás, valor) como mediciones de ejemplo. */
+    private void medir(Metrica metrica, LocalDateTime ahora, double... diasYValores) {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        for (int i = 0; i + 1 &lt; diasYValores.length; i += 2) {</span>
+<span class="nc" id="L132">            LocalDateTime instante = ahora.minusDays((long) diasYValores[i]);</span>
+<span class="nc" id="L133">            mediciones.save(metrica.registrarMedicion(diasYValores[i + 1], NOTA_DEMO, &quot;dev&quot;, instante));</span>
+        }
+<span class="nc" id="L135">        metricas.save(metrica);</span>
+<span class="nc" id="L136">    }</span>
+
+    private void tecnica(Proyecto proyecto, String nombre, CategoriaTecnica categoria, String responsable,
+                         EstadoTecnica estado, String url, LocalDateTime ahora) {
+<span class="nc" id="L140">        TecnicaSqa tecnica = tecnicas.save(new TecnicaSqa(proyecto, nombre, categoria, NOTA_DEMO, responsable));</span>
+<span class="nc" id="L141">        cambios.save(tecnica.registrarAsignacion(&quot;sqa&quot;, ahora.minusDays(20)));</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (estado != EstadoTecnica.PENDIENTE) {</span>
+<span class="nc" id="L143">            cambios.save(tecnica.cambiarEstado(estado, Evidencia.deUrl(url), responsable, ahora.minusDays(2)));</span>
+<span class="nc" id="L144">            tecnicas.save(tecnica);</span>
+        }
+<span class="nc" id="L146">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SentidoMetrica.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Plataforma de Monitoreo y Gestión SQA</a> &gt; <a href="index.source.html" class="el_package">mx.uaz.sqa.dominio.modelo</a> &gt; <span class="el_source">SentidoMetrica.java</span></div><h1>SentidoMetrica.java</h1><pre class="source lang-java linenums">package mx.uaz.sqa.dominio.modelo;
+
+/**
+ * Indica si un valor más alto de la métrica es mejor (p. ej. cobertura) o peor
+ * (p. ej. densidad de defectos). Cada sentido implementa polimórficamente cómo se
+ * evalúa el semáforo y qué orden deben tener los límites.
+ *
+ * &lt;p&gt;Con dos límites (óptimo y crítico) los tres rangos Verde / Amarillo / Rojo quedan
+ * &lt;b&gt;mutuamente excluyentes y continuos&lt;/b&gt; por construcción (CU02 paso 3): todo valor
+ * real cae exactamente en un rango.&lt;/p&gt;
+ */
+<span class="fc" id="L12">public enum SentidoMetrica {</span>
+
+<span class="fc" id="L14">    MAYOR_ES_MEJOR(&quot;Mayor es mejor (p. ej. cobertura)&quot;) {</span>
+        @Override
+        public EstadoSemaforo evaluar(double valor, double optimo, double critico) {
+<span class="fc bfc" id="L17" title="All 2 branches covered.">            if (valor &gt;= optimo) {</span>
+<span class="fc" id="L18">                return EstadoSemaforo.VERDE;</span>
+            }
+<span class="fc bfc" id="L20" title="All 2 branches covered.">            if (valor &lt; critico) {</span>
+<span class="fc" id="L21">                return EstadoSemaforo.ROJO;</span>
+            }
+<span class="fc" id="L23">            return EstadoSemaforo.AMARILLO;</span>
+        }
+
+        @Override
+        public boolean limitesCoherentes(double optimo, double critico) {
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            return optimo &gt; critico;</span>
+        }
+
+        @Override
+        public String reglaDeCoherencia() {
+<span class="fc" id="L33">            return &quot;el límite óptimo debe ser MAYOR que el límite crítico&quot;;</span>
+        }
+
+        @Override
+        public String rangoVerde(String optimo, String critico) {
+<span class="fc" id="L38">            return &quot;≥ &quot; + optimo;</span>
+        }
+
+        @Override
+        public String rangoAmarillo(String optimo, String critico) {
+<span class="fc" id="L43">            return &quot;≥ &quot; + critico + &quot; y &lt; &quot; + optimo;</span>
+        }
+
+        @Override
+        public String rangoRojo(String optimo, String critico) {
+<span class="fc" id="L48">            return &quot;&lt; &quot; + critico;</span>
+        }
+    },
+
+<span class="fc" id="L52">    MENOR_ES_MEJOR(&quot;Menor es mejor (p. ej. defectos)&quot;) {</span>
+        @Override
+        public EstadoSemaforo evaluar(double valor, double optimo, double critico) {
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            if (valor &lt;= optimo) {</span>
+<span class="fc" id="L56">                return EstadoSemaforo.VERDE;</span>
+            }
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (valor &gt; critico) {</span>
+<span class="fc" id="L59">                return EstadoSemaforo.ROJO;</span>
+            }
+<span class="fc" id="L61">            return EstadoSemaforo.AMARILLO;</span>
+        }
+
+        @Override
+        public boolean limitesCoherentes(double optimo, double critico) {
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            return optimo &lt; critico;</span>
+        }
+
+        @Override
+        public String reglaDeCoherencia() {
+<span class="fc" id="L71">            return &quot;el límite óptimo debe ser MENOR que el límite crítico&quot;;</span>
+        }
+
+        @Override
+        public String rangoVerde(String optimo, String critico) {
+<span class="fc" id="L76">            return &quot;≤ &quot; + optimo;</span>
+        }
+
+        @Override
+        public String rangoAmarillo(String optimo, String critico) {
+<span class="fc" id="L81">            return &quot;&gt; &quot; + optimo + &quot; y ≤ &quot; + critico;</span>
+        }
+
+        @Override
+        public String rangoRojo(String optimo, String critico) {
+<span class="fc" id="L86">            return &quot;&gt; &quot; + critico;</span>
+        }
+    };
+
+    private final String etiqueta;
+
+<span class="fc" id="L92">    SentidoMetrica(String etiqueta) {</span>
+<span class="fc" id="L93">        this.etiqueta = etiqueta;</span>
+<span class="fc" id="L94">    }</span>
+
+    public abstract EstadoSemaforo evaluar(double valor, double optimo, double critico);
+
+    public abstract boolean limitesCoherentes(double optimo, double critico);
+
+    public abstract String reglaDeCoherencia();
+
+    public abstract String rangoVerde(String optimo, String critico);
+
+    public abstract String rangoAmarillo(String optimo, String critico);
+
+    public abstract String rangoRojo(String optimo, String critico);
+
+    public String getEtiqueta() {
+<span class="fc" id="L109">        return etiqueta;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
