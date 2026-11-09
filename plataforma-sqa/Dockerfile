@@ -7,16 +7,23 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
 
+# ===== Etapa 2: Runtime (corregida) =====
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-# Se crea un usuario sin privilegios para ejecutar la aplicación
-RUN groupadd -r sqagroup && useradd -r -g sqagroup -d /app -s /sbin/nologin sqauser \
-    && mkdir -p /app/data/evidencias \
-    && chown -R sqauser:sqagroup /app
+# Crear usuario de sistema sin privilegios (sin home, sin shell)
+RUN useradd --system --uid 10001 --no-create-home appuser
 
-COPY --from=build --chown=sqauser:sqagroup /build/target/plataforma-sqa-0.2.0-SNAPSHOT.jar app.jar
+# Crear directorios y asignar propietario ANTES de cambiar de usuario
+RUN mkdir -p /app/data/evidencias \
+    && chown -R appuser:appuser /app
 
-USER sqauser
+# Copiar el jar con el propietario correcto
+COPY --from=build --chown=appuser:appuser /build/target/plataforma-sqa-0.2.0-SNAPSHOT.jar app.jar
+
 EXPOSE 8080
+
+# Cambiar al usuario sin privilegios (antes del ENTRYPOINT)
+USER 10001
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

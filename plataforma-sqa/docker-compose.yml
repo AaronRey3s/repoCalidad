@@ -30,6 +30,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: sqa_secret_password
       SQA_EVIDENCIAS_DIRECTORIO: /app/data/evidencias
     volumes:
+      # Mantiene los archivos de evidencia (RS-08) sincronizados con tu carpeta local
       - ./data/evidencias:/app/data/evidencias
     depends_on:
       db-mysql:
