@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Proyecto')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor contenedor-angosto">
+    <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
+
+    <p class="migas"><a th:href="@{/proyectos}">Proyectos</a> /
+        <span th:text="${proyectoId == null} ? 'Nuevo' : 'Editar'">Nuevo</span></p>
+    <h1 th:text="${proyectoId == null} ? 'Registrar proyecto' : 'Editar proyecto'">Registrar proyecto</h1>
+    <p class="sutil">CU01 · El proyecto queda vinculado obligatoriamente a un periodo de evaluación.</p>
+
+    <form th:action="${proyectoId == null} ? @{/proyectos} : @{/proyectos/{id}(id=${proyectoId})}"
+          th:object="${form}" method="post" class="tarjeta formulario" novalidate>
+
+        <div th:if="${#fields.hasGlobalErrors()}" class="alerta alerta-error" role="alert">
+            <p th:each="mensaje : ${#fields.globalErrors()}" th:text="${mensaje}">Error</p>
+        </div>
+
+        <div class="campo" th:classappend="${#fields.hasErrors('nombre')} ? 'con-error'">
+            <label for="nombre">Nombre del proyecto *</label>
+            <input type="text" th:field="*{nombre}" maxlength="120">
+            <p class="error-campo" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}">Error</p>
+        </div>
+
+        <div class="campo" th:classappend="${#fields.hasErrors('descripcion')} ? 'con-error'">
+            <label for="descripcion">Descripción</label>
+            <textarea th:field="*{descripcion}" rows="3" maxlength="1000"></textarea>
+            <p class="error-campo" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}">Error</p>
+        </div>
+
+        <div class="campo" th:classappend="${#fields.hasErrors('tecnologias')} ? 'con-error'">
+            <label for="tecnologias">Tecnologías empleadas</label>
+            <input type="text" th:field="*{tecnologias}" maxlength="300" placeholder="Java 17, Spring Boot, MySQL…">
+            <p class="error-campo" th:if="${#fields.hasErrors('tecnologias')}" th:errors="*{tecnologias}">Error</p>
+        </div>
+
+        <fieldset class="grupo-campos">
+            <legend>Periodo de evaluación</legend>
+            <div class="campo" th:classappend="${#fields.hasErrors('etiquetaPeriodo')} ? 'con-error'">
+                <label for="etiquetaPeriodo">Etiqueta del periodo *</label>
+                <input type="text" th:field="*{etiquetaPeriodo}" maxlength="60" placeholder="Ago-Dic 2026">
+                <p class="error-campo" th:if="${#fields.hasErrors('etiquetaPeriodo')}" th:errors="*{etiquetaPeriodo}">Error</p>
+            </div>
+            <div class="fila-campos">
+                <div class="campo" th:classappend="${#fields.hasErrors('fechaInicio')} ? 'con-error'">
+                    <label for="fechaInicio">Fecha de inicio *</label>
+                    <input type="date" th:field="*{fechaInicio}">
+                    <p class="error-campo" th:if="${#fields.hasErrors('fechaInicio')}" th:errors="*{fechaInicio}">Error</p>
+                </div>
+                <div class="campo" th:classappend="${#fields.hasErrors('fechaFin')} ? 'con-error'">
+                    <label for="fechaFin">Fecha de fin *</label>
+                    <input type="date" th:field="*{fechaFin}">
+                    <p class="error-campo" th:if="${#fields.hasErrors('fechaFin')}" th:errors="*{fechaFin}">Error</p>
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="botones">
+            <a th:href="${proyectoId == null} ? @{/proyectos} : @{/proyectos/{id}(id=${proyectoId})}"
+               class="boton boton-secundario">Cancelar</a>
+            <button type="submit" class="boton boton-primario">Guardar</button>
+        </div>
+    </form>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>

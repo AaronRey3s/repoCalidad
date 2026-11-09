@@ -7,11 +7,13 @@
     <div th:replace="~{fragmentos/plantilla :: mensajes}"></div>
 
     <p class="migas"><a th:href="@{/proyectos}">Proyectos</a> /
-        <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" th:text="${proyecto.nombre()}">Proyecto</a> / Nueva métrica</p>
-    <h1>Configurar métrica de calidad</h1>
+        <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" th:text="${proyecto.nombre()}">Proyecto</a> /
+        <span th:text="${metricaId != null} ? 'Editar métrica' : 'Nueva métrica'">Nueva métrica</span></p>
+    <h1 th:text="${metricaId != null} ? 'Editar métrica de calidad' : 'Configurar métrica de calidad'">Configurar métrica de calidad</h1>
     <p class="sutil">CU02 · Define la unidad, la frecuencia y los umbrales del semáforo Verde / Amarillo / Rojo.</p>
 
-    <form th:action="@{/proyectos/{id}/metricas(id=${proyecto.id()})}" th:object="${form}" method="post"
+    <form th:action="${metricaId != null} ? @{/metricas/{id}/editar(id=${metricaId})} : @{/proyectos/{id}/metricas(id=${proyecto.id()})}"
+          th:object="${form}" method="post"
           class="tarjeta formulario" id="formulario-metrica" novalidate>
 
         <div th:if="${#fields.hasGlobalErrors()}" class="alerta alerta-error" role="alert">
@@ -71,7 +73,8 @@
 
         <div class="botones">
             <a th:href="@{/proyectos/{id}(id=${proyecto.id()})}" class="boton boton-secundario">Cancelar</a>
-            <button type="submit" class="boton boton-primario">Guardar métrica</button>
+            <button type="submit" class="boton boton-primario"
+                    th:text="${metricaId != null} ? 'Actualizar métrica' : 'Guardar métrica'">Guardar métrica</button>
         </div>
     </form>
 </main>

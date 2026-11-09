@@ -22,9 +22,8 @@ services:
     container_name: sqa-app
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
-      # Activa tu archivo application-mysql.properties automáticamente
       SPRING_PROFILES_ACTIVE: mysql
       SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql:3306/plataforma_sqa?createDatabaseIfNotExist=true&serverTimezone=America/Mexico_City
       SPRING_DATASOURCE_USERNAME: root

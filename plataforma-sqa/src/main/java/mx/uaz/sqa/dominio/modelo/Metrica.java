@@ -74,6 +74,21 @@ public class Metrica extends EntidadPersistente {
     }
 
     /**
+     * CU02 – edición: permite al Líder SQA reconfigurar nombre, unidad, frecuencia y umbrales.
+     * Solo se restringe si el proyecto está inactivo.
+     */
+    public void actualizar(String nombre, UnidadMedida unidad, Frecuencia frecuencia,
+                           SentidoMetrica sentido, Double limiteOptimo, Double limiteCritico) {
+        proyecto.verificarActivo();
+        this.nombre = Validaciones.requerido(nombre, "El nombre de la métrica es obligatorio", "nombre", 120);
+        if (unidad == null) throw new DatosInvalidosException("Selecciona la unidad de medida", "unidad");
+        if (frecuencia == null) throw new DatosInvalidosException("Selecciona la frecuencia de medición", "frecuencia");
+        this.umbrales = Umbrales.definir(sentido, limiteOptimo, limiteCritico, unidad);
+        this.unidad = unidad;
+        this.frecuencia = frecuencia;
+    }
+
+    /**
      * CU03 / RS-04 / RS-05: registra una medición, evalúa el semáforo y actualiza el estado
      * actual de la métrica. Devuelve la medición (inmutable) que debe persistirse.
      */

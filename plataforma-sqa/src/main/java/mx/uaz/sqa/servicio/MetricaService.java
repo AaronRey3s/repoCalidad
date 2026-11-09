@@ -56,6 +56,22 @@ public class MetricaService {
     }
 
     /**
+     * CU02 – edición: reconfigura nombre, unidad, frecuencia y umbrales de una métrica existente.
+     */
+    public Metrica actualizar(Long metricaId, DatosMetrica datos) {
+        Metrica metrica = obtener(metricaId);
+        // Si cambió el nombre, verificar que no duplique otra métrica del mismo proyecto
+        if (!metrica.getNombre().equalsIgnoreCase(datos.nombre())
+                && metricas.existsByProyectoIdAndNombreIgnoreCase(metrica.getProyecto().getId(), datos.nombre())) {
+            throw new MetricaDuplicadaException("El proyecto ya tiene una métrica llamada \""
+                    + datos.nombre() + "\"", "nombre");
+        }
+        metrica.actualizar(datos.nombre(), datos.unidad(), datos.frecuencia(),
+                datos.sentido(), datos.limiteOptimo(), datos.limiteCritico());
+        return metricas.save(metrica);
+    }
+
+    /**
      * Elimina una métrica capturada por error. Solo se permite si no tiene mediciones,
      * porque el histórico es inmutable (RNF-03).
      *
