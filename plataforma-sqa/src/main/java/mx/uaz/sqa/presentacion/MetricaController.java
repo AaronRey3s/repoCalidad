@@ -37,7 +37,7 @@ public class MetricaController extends ControladorBase {
     @PreAuthorize("hasRole('LIDER_SQA')")
     public String nueva(@PathVariable("proyectoId") Long proyectoId, Model model) {
         model.addAttribute("form", new MetricaForm());
-        return mostrarFormulario(proyectoId, model);
+        return mostrarFormulario(proyectoId, null, model);
     }
 
     @PostMapping("/proyectos/{proyectoId}/metricas")
@@ -55,8 +55,44 @@ public class MetricaController extends ControladorBase {
                 registrarError(resultado, e);
             }
         }
-        return mostrarFormulario(proyectoId, model);
+        return mostrarFormulario(proyectoId, null, model);
     }
+
+    // ── Editar métrica existente ─────────────────────────────────────────────
+
+    @GetMapping("/metricas/{id}/editar")
+    @PreAuthorize("hasRole('LIDER_SQA')")
+    public String editarFormulario(@PathVariable("id") Long id, Model model) {
+        Metrica metrica = metricaService.obtener(id);
+        MetricaForm form = MetricaForm.desde(metrica);
+        model.addAttribute("form", form);
+        model.addAttribute("metricaId", id);
+        return mostrarFormulario(metrica.getProyecto().getId(), id, model);
+    }
+
+    @PostMapping("/metricas/{id}/editar")
+    @PreAuthorize("hasRole('LIDER_SQA')")
+    public String editarGuardar(@PathVariable("id") Long id,
+                                @Valid @ModelAttribute("form") MetricaForm form, BindingResult resultado,
+                                Model model, RedirectAttributes atributos) {
+        Metrica metrica = metricaService.obtener(id);
+        Long proyectoId = metrica.getProyecto().getId();
+        if (!resultado.hasErrors()) {
+            try {
+                Metrica actualizada = metricaService.actualizar(id, form.aDatos());
+                exito(atributos, "Métrica \"" + actualizada.getNombre() + "\" actualizada. Verde "
+                        + actualizada.rangoVerde() + " · Amarillo " + actualizada.rangoAmarillo()
+                        + " · Rojo " + actualizada.rangoRojo());
+                return "redirect:/proyectos/" + proyectoId;
+            } catch (ReglaNegocioException e) {
+                registrarError(resultado, e);
+            }
+        }
+        model.addAttribute("metricaId", id);
+        return mostrarFormulario(proyectoId, id, model);
+    }
+
+    // ── Eliminar ─────────────────────────────────────────────────────────────
 
     @PostMapping("/metricas/{id}/eliminar")
     @PreAuthorize("hasRole('LIDER_SQA')")
@@ -71,11 +107,13 @@ public class MetricaController extends ControladorBase {
         return "redirect:/proyectos/" + proyectoId;
     }
 
-    private String mostrarFormulario(Long proyectoId, Model model) {
+    private String mostrarFormulario(Long proyectoId, Long metricaId, Model model) {
         model.addAttribute("proyecto", proyectoService.obtenerResumen(proyectoId));
         model.addAttribute("unidades", UnidadMedida.values());
         model.addAttribute("frecuencias", Frecuencia.values());
         model.addAttribute("sentidos", SentidoMetrica.values());
+        // metricaId null → modo nueva; != null → modo edición
+        model.addAttribute("metricaId", metricaId);
         return "metricas/formulario";
     }
 }

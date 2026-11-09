@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/plantilla :: cabeza('Error')}"></head>
+<body>
+<header th:replace="~{fragmentos/plantilla :: navegacion}"></header>
+<main class="contenedor contenedor-angosto">
+    <section class="tarjeta pagina-error">
+        <p class="codigo-error" th:text="${status}">500</p>
+        <h1>Ocurrió un error inesperado</h1>
+        <p>Intenta de nuevo. Si el problema persiste, regístralo como defecto en GitHub Issues con los pasos para reproducirlo.</p>
+        <a th:href="@{/proyectos}" class="boton boton-primario">Volver a proyectos</a>
+    </section>
+</main>
+<footer th:replace="~{fragmentos/plantilla :: pie}"></footer>
+</body>
+</html>

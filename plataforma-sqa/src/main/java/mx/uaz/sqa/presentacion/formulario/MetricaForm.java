@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import mx.uaz.sqa.dominio.modelo.Frecuencia;
+import mx.uaz.sqa.dominio.modelo.Metrica;
 import mx.uaz.sqa.dominio.modelo.SentidoMetrica;
 import mx.uaz.sqa.dominio.modelo.UnidadMedida;
 import mx.uaz.sqa.servicio.dto.DatosMetrica;
@@ -31,6 +32,18 @@ public class MetricaForm {
 
     @NotNull(message = "El límite crítico es obligatorio")
     private Double limiteCritico;
+
+    /** Crea un formulario prellenado con los datos actuales de la métrica (modo edición). */
+    public static MetricaForm desde(Metrica metrica) {
+        MetricaForm f = new MetricaForm();
+        f.nombre = metrica.getNombre();
+        f.unidad = metrica.getUnidad();
+        f.frecuencia = metrica.getFrecuencia();
+        f.sentido = metrica.getUmbrales().getSentido();
+        f.limiteOptimo = metrica.getUmbrales().getLimiteOptimo();
+        f.limiteCritico = metrica.getUmbrales().getLimiteCritico();
+        return f;
+    }
 
     public DatosMetrica aDatos() {
         return new DatosMetrica(nombre, unidad, frecuencia, sentido, limiteOptimo, limiteCritico);
