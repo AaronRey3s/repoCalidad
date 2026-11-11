@@ -1,3 +1,4 @@
+
 package mx.uaz.sqa.configuracion;
 
 import java.time.Clock;
@@ -80,6 +81,7 @@ public class CargadorDatosIniciales implements CommandLineRunner {
             crearUsuario("stake", "Stakeholder (demo)", "stake123", Rol.STAKEHOLDER);
             LOG.info("Usuarios de prueba creados: lider/lider123, sqa/sqa123, dev/dev123, stake/stake123");
         }
+
         if (cargarDemo && proyectos.count() == 0) {
             cargarProyectoDemo();
             LOG.info("Proyecto de demostración cargado (sqa.demo.cargar-datos=true)");
@@ -93,6 +95,7 @@ public class CargadorDatosIniciales implements CommandLineRunner {
     private void cargarProyectoDemo() {
         LocalDateTime ahora = LocalDateTime.now(reloj);
         LocalDate hoy = ahora.toLocalDate();
+
         Proyecto proyecto = proyectos.save(new Proyecto(
                 "Plataforma de Monitoreo SQA (demo)",
                 "Proyecto de ejemplo: el equipo monitorea su propio desarrollo (dogfooding, sección 4.4 del SRS).",
@@ -102,45 +105,104 @@ public class CargadorDatosIniciales implements CommandLineRunner {
 
         Metrica cobertura = metricas.save(new Metrica(proyecto, "Cobertura de código (JaCoCo)",
                 UnidadMedida.PORCENTAJE, Frecuencia.POR_SPRINT, SentidoMetrica.MAYOR_ES_MEJOR, 70.0, 50.0));
+
         Metrica exitoPruebas = metricas.save(new Metrica(proyecto, "Tasa de éxito de pruebas",
                 UnidadMedida.PORCENTAJE, Frecuencia.POR_SPRINT, SentidoMetrica.MAYOR_ES_MEJOR, 95.0, 80.0));
+
         Metrica densidad = metricas.save(new Metrica(proyecto, "Densidad de defectos (defectos por CU)",
                 UnidadMedida.RAZON, Frecuencia.SEMANAL, SentidoMetrica.MENOR_ES_MEJOR, 0.5, 1.5));
+
         Metrica criticos = metricas.save(new Metrica(proyecto, "Defectos críticos abiertos",
                 UnidadMedida.CONTEO, Frecuencia.SEMANAL, SentidoMetrica.MENOR_ES_MEJOR, 0.0, 2.0));
+
         metricas.save(new Metrica(proyecto, "Complejidad ciclomática promedio",
                 UnidadMedida.RAZON, Frecuencia.SEMANAL, SentidoMetrica.MENOR_ES_MEJOR, 5.0, 10.0));
 
-        medir(cobertura, ahora, 21, 38.0, 14, 55.0, 3, 72.0);
-        medir(exitoPruebas, ahora, 21, 78.0, 14, 88.0, 3, 96.0);
-        medir(densidad, ahora, 21, 2.0, 14, 1.6, 3, 1.2);
-        medir(criticos, ahora, 21, 5.0, 14, 4.0, 3, 3.0);
+        // Mediciones de ejemplo con días y valores identificados.
+        medir(cobertura, ahora,
+                new MedicionEjemplo(21, 38.0),
+                new MedicionEjemplo(14, 55.0),
+                new MedicionEjemplo(3, 72.0));
 
-        tecnica(proyecto, "Revisión por pares de Pull Requests (IEEE 1028)", CategoriaTecnica.REVISION_TECNICA_PARES,
-                "sqa", EstadoTecnica.APLICADO, "https://github.com/riagalv/repoCalidad/pulls", ahora);
-        tecnica(proyecto, "Pruebas unitarias automatizadas (JUnit 5 + JaCoCo)", CategoriaTecnica.PRUEBAS_SOFTWARE,
+        medir(exitoPruebas, ahora,
+                new MedicionEjemplo(21, 78.0),
+                new MedicionEjemplo(14, 88.0),
+                new MedicionEjemplo(3, 96.0));
+
+        medir(densidad, ahora,
+                new MedicionEjemplo(21, 2.0),
+                new MedicionEjemplo(14, 1.6),
+                new MedicionEjemplo(3, 1.2));
+
+        medir(criticos, ahora,
+                new MedicionEjemplo(21, 5.0),
+                new MedicionEjemplo(14, 4.0),
+                new MedicionEjemplo(3, 3.0));
+
+        tecnica(proyecto, "Revisión por pares de Pull Requests (IEEE 1028)",
+                CategoriaTecnica.REVISION_TECNICA_PARES,
+                "sqa", EstadoTecnica.APLICADO,
+                "https://github.com/riagalv/repoCalidad/pulls", ahora);
+
+        tecnica(proyecto, "Pruebas unitarias automatizadas (JUnit 5 + JaCoCo)",
+                CategoriaTecnica.PRUEBAS_SOFTWARE,
                 "dev", EstadoTecnica.EN_PROGRESO, null, ahora);
-        tecnica(proyecto, "Análisis estático (SonarCloud)", CategoriaTecnica.ANALISIS_ESTATICO,
+
+        tecnica(proyecto, "Análisis estático (SonarCloud)",
+                CategoriaTecnica.ANALISIS_ESTATICO,
                 "sqa", EstadoTecnica.PENDIENTE, null, ahora);
-        tecnica(proyecto, "Auditoría de proceso (IEEE 730)", CategoriaTecnica.AUDITORIA_PROCESO,
+
+        tecnica(proyecto, "Auditoría de proceso (IEEE 730)",
+                CategoriaTecnica.AUDITORIA_PROCESO,
                 "lider", EstadoTecnica.PENDIENTE, null, ahora);
     }
 
-    /** Registra pares (díasAtrás, valor) como mediciones de ejemplo. */
-    private void medir(Metrica metrica, LocalDateTime ahora, double... diasYValores) {
-        for (int i = 0; i + 1 < diasYValores.length; i += 2) {
-            LocalDateTime instante = ahora.minusDays((long) diasYValores[i]);
-            mediciones.save(metrica.registrarMedicion(diasYValores[i + 1], NOTA_DEMO, "dev", instante));
+    /**
+     * Representa una medición de demostración.
+     *
+     * @param diasAtras cantidad de días anteriores a la fecha actual
+     * @param valor valor registrado para la métrica
+     */
+    private record MedicionEjemplo(int diasAtras, double valor) {
+    }
+
+    /**
+     * Registra las mediciones de ejemplo de una métrica.
+     */
+    private void medir(Metrica metrica, LocalDateTime ahora,
+                       MedicionEjemplo... ejemplos) {
+
+        for (MedicionEjemplo ejemplo : ejemplos) {
+            LocalDateTime instante = ahora.minusDays(ejemplo.diasAtras());
+
+            mediciones.save(metrica.registrarMedicion(
+                    ejemplo.valor(),
+                    NOTA_DEMO,
+                    "dev",
+                    instante
+            ));
         }
+
         metricas.save(metrica);
     }
 
     private void tecnica(Proyecto proyecto, String nombre, CategoriaTecnica categoria, String responsable,
                          EstadoTecnica estado, String url, LocalDateTime ahora) {
-        TecnicaSqa tecnica = tecnicas.save(new TecnicaSqa(proyecto, nombre, categoria, NOTA_DEMO, responsable));
+
+        TecnicaSqa tecnica = tecnicas.save(
+                new TecnicaSqa(proyecto, nombre, categoria, NOTA_DEMO, responsable)
+        );
+
         cambios.save(tecnica.registrarAsignacion("sqa", ahora.minusDays(20)));
+
         if (estado != EstadoTecnica.PENDIENTE) {
-            cambios.save(tecnica.cambiarEstado(estado, Evidencia.deUrl(url), responsable, ahora.minusDays(2)));
+            cambios.save(tecnica.cambiarEstado(
+                    estado,
+                    Evidencia.deUrl(url),
+                    responsable,
+                    ahora.minusDays(2)
+            ));
+
             tecnicas.save(tecnica);
         }
     }
