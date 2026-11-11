@@ -34,7 +34,7 @@ public class DashboardController {
         model.addAttribute("seleccionado", seleccionado);
         if (seleccionado != null) {
             DashboardProyecto dashboard = dashboardService.construir(seleccionado);
-            model.addAttribute("d", dashboard);
+            model.addAttribute("dashboard", dashboard);
             model.addAttribute("tarjetas", dashboard.metricas().stream().map(TarjetaMetrica::de).toList());
         }
         return "dashboard/ver";

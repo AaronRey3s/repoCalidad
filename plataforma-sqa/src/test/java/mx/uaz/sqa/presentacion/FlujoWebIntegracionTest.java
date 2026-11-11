@@ -323,7 +323,7 @@ class FlujoWebIntegracionTest {
         mvc.perform(get("/dashboard")).andExpect(status().isOk()).andExpect(view().name("dashboard/ver"));
         mvc.perform(get("/dashboard").param("proyectoId", String.valueOf(proyecto.getId())))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeExists("d", "tarjetas"));
+                .andExpect(model().attributeExists("dashboard", "tarjetas"));
 
         mvc.perform(get("/proyectos/{id}/reporte.pdf", proyecto.getId()))
                 .andExpect(status().isOk())
@@ -339,7 +339,7 @@ class FlujoWebIntegracionTest {
 
         mvc.perform(get("/dashboard").param("proyectoId", String.valueOf(proyecto.getId())))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeExists("d"));
+                .andExpect(model().attributeExists("dashboard"));
 
         mvc.perform(get("/proyectos/{id}/reporte.pdf", proyecto.getId()))
                 .andExpect(status().isSeeOther())
