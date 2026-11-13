@@ -1,3 +1,4 @@
+
 package mx.uaz.sqa.servicio;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -13,6 +14,8 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+
+import mx.uaz.sqa.dominio.excepcion.DatosInvalidosException;
 import mx.uaz.sqa.dominio.excepcion.EvidenciaInvalidaException;
 import mx.uaz.sqa.dominio.excepcion.EvidenciaRequeridaException;
 import mx.uaz.sqa.dominio.excepcion.ProyectoInactivoException;
@@ -21,15 +24,19 @@ import mx.uaz.sqa.dominio.modelo.CambioEstadoTecnica;
 import mx.uaz.sqa.dominio.modelo.CategoriaTecnica;
 import mx.uaz.sqa.dominio.modelo.EstadoTecnica;
 import mx.uaz.sqa.dominio.modelo.Proyecto;
+import mx.uaz.sqa.dominio.modelo.Rol;
 import mx.uaz.sqa.dominio.modelo.TecnicaSqa;
+import mx.uaz.sqa.dominio.modelo.Usuario;
 import mx.uaz.sqa.persistencia.AlmacenArchivos;
 import mx.uaz.sqa.persistencia.CambioEstadoTecnicaRepository;
 import mx.uaz.sqa.persistencia.ProyectoRepository;
 import mx.uaz.sqa.persistencia.TecnicaSqaRepository;
+import mx.uaz.sqa.persistencia.UsuarioRepository;
 import mx.uaz.sqa.servicio.dto.ArchivoAdjunto;
 import mx.uaz.sqa.servicio.dto.ArchivoDescargable;
 import mx.uaz.sqa.servicio.dto.DatosTecnica;
 import mx.uaz.sqa.soporte.Fabrica;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,14 +49,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("CU04 – Gestionar ejecución y evidencia de técnica SQA (servicio)")
 class TecnicaSqaServiceTest {
 
-    private static final byte[] CONTENIDO = "acta de revisión".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] CONTENIDO =
+            "acta de revisión".getBytes(StandardCharsets.UTF_8);
 
     @Mock
     private ProyectoRepository proyectos;
+
     @Mock
     private TecnicaSqaRepository tecnicas;
+
     @Mock
     private CambioEstadoTecnicaRepository cambios;
+
+    @Mock
+    private UsuarioRepository usuarios;
+
     @Mock
     private AlmacenArchivos almacen;
 
@@ -59,46 +73,135 @@ class TecnicaSqaServiceTest {
 
     @BeforeEach
     void preparar() {
-        servicio = new TecnicaSqaService(proyectos, tecnicas, cambios, almacen, Fabrica.reloj());
+        servicio = new TecnicaSqaService(
+                proyectos,
+                tecnicas,
+                cambios,
+                usuarios,
+                almacen,
+                Fabrica.reloj()
+        );
+
         proyecto = Fabrica.conId(Fabrica.proyecto(), 1L);
         tecnica = Fabrica.conId(Fabrica.tecnica(proyecto), 5L);
     }
 
     @Test
-    @DisplayName("RS-06: asignar una técnica la deja Pendiente y registra la bitácora")
+    @DisplayName("RS-06: asignar una técnica con responsable existente registra la bitácora")
     void asignaTecnica() {
-        when(proyectos.findById(1L)).thenReturn(Optional.of(proyecto));
-        when(tecnicas.save(any(TecnicaSqa.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+        when(proyectos.findById(1L))
+                .thenReturn(Optional.of(proyecto));
 
-        TecnicaSqa asignada = servicio.asignar(1L,
-                new DatosTecnica("Pruebas unitarias", CategoriaTecnica.PRUEBAS_SOFTWARE, null, "dev"), "sqa");
+        Usuario responsable = new Usuario(
+                "dev",
+                "Desarrollador de prueba",
+                "hash-de-prueba",
+                Rol.DESARROLLADOR
+        );
+
+        when(usuarios.findByUsername("dev"))
+                .thenReturn(Optional.of(responsable));
+
+        when(tecnicas.save(any(TecnicaSqa.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        TecnicaSqa asignada = servicio.asignar(
+                1L,
+                new DatosTecnica(
+                        "Pruebas unitarias",
+                        CategoriaTecnica.PRUEBAS_SOFTWARE,
+                        null,
+                        "dev"
+                ),
+                "sqa"
+        );
 
         assertEquals(EstadoTecnica.PENDIENTE, asignada.getEstado());
-        ArgumentCaptor<CambioEstadoTecnica> captor = ArgumentCaptor.forClass(CambioEstadoTecnica.class);
+        assertEquals("dev", asignada.getResponsable());
+
+        verify(usuarios).findByUsername("dev");
+
+        ArgumentCaptor<CambioEstadoTecnica> captor =
+                ArgumentCaptor.forClass(CambioEstadoTecnica.class);
+
         verify(cambios).save(captor.capture());
+
         assertNull(captor.getValue().getEstadoAnterior());
         assertEquals("sqa", captor.getValue().getAutor());
         assertEquals(Fabrica.AHORA, captor.getValue().getRegistradoEn());
+    }
+
+    // Issue #4: impedir la asignación de responsables inexistentes.
+    @Test
+    @DisplayName("RS-06: rechaza un responsable inexistente sin guardar la técnica")
+    void rechazaResponsableInexistente() {
+        when(proyectos.findById(1L))
+                .thenReturn(Optional.of(proyecto));
+
+        when(usuarios.findByUsername("usuario_fantasma"))
+                .thenReturn(Optional.empty());
+
+        DatosTecnica datos = new DatosTecnica(
+                "Revisión por pares",
+                CategoriaTecnica.REVISION_TECNICA_PARES,
+                "Técnica de prueba",
+                "usuario_fantasma"
+        );
+
+        DatosInvalidosException error = assertThrows(
+                DatosInvalidosException.class,
+                () -> servicio.asignar(1L, datos, "sqa")
+        );
+
+        assertEquals("responsable", error.getCampo());
+
+        assertEquals(
+                "El responsable seleccionado no existe en el sistema",
+                error.getMessage()
+        );
+
+        verify(usuarios).findByUsername("usuario_fantasma");
+
+        verifyNoInteractions(tecnicas, cambios);
     }
 
     @Test
     @DisplayName("No se asignan técnicas a un proyecto inactivo")
     void asignarProyectoInactivo() {
         proyecto.desactivar();
-        when(proyectos.findById(1L)).thenReturn(Optional.of(proyecto));
 
-        assertThrows(ProyectoInactivoException.class, () -> servicio.asignar(1L,
-                new DatosTecnica("T", CategoriaTecnica.AUDITORIA_PROCESO, null, "lider"), "sqa"));
-        verifyNoInteractions(tecnicas, cambios);
+        when(proyectos.findById(1L))
+                .thenReturn(Optional.of(proyecto));
+
+        assertThrows(
+                ProyectoInactivoException.class,
+                () -> servicio.asignar(
+                        1L,
+                        new DatosTecnica(
+                                "T",
+                                CategoriaTecnica.AUDITORIA_PROCESO,
+                                null,
+                                "lider"
+                        ),
+                        "sqa"
+                )
+        );
+
+        verifyNoInteractions(usuarios, tecnicas, cambios);
     }
 
     @Test
     @DisplayName("CU04 flujo 3a: 'Aplicado' sin evidencia se bloquea y no se registra nada")
     void bloqueaAplicadoSinEvidencia() {
-        when(tecnicas.findById(5L)).thenReturn(Optional.of(tecnica));
+        when(tecnicas.findById(5L))
+                .thenReturn(Optional.of(tecnica));
 
-        assertThrows(EvidenciaRequeridaException.class,
-                () -> servicio.actualizarEstado(5L, EstadoTecnica.APLICADO, "  ", null, "dev"));
+        assertThrows(
+                EvidenciaRequeridaException.class,
+                () -> servicio.actualizarEstado(
+                        5L, EstadoTecnica.APLICADO, "  ", null, "dev"
+                )
+        );
 
         assertEquals(EstadoTecnica.PENDIENTE, tecnica.getEstado());
         verify(cambios, never()).save(any());
@@ -108,50 +211,103 @@ class TecnicaSqaServiceTest {
     @Test
     @DisplayName("'Aplicado' con URL válida: cambia el estado y registra autor y hora (RNF-03)")
     void aplicaConUrl() {
-        when(tecnicas.findById(5L)).thenReturn(Optional.of(tecnica));
+        when(tecnicas.findById(5L))
+                .thenReturn(Optional.of(tecnica));
 
-        servicio.actualizarEstado(5L, EstadoTecnica.APLICADO, "https://github.com/riagalv/repoCalidad/pull/1", null, "dev");
+        servicio.actualizarEstado(
+                5L,
+                EstadoTecnica.APLICADO,
+                "https://github.com/riagalv/repoCalidad/pull/1",
+                null,
+                "dev"
+        );
 
         assertEquals(EstadoTecnica.APLICADO, tecnica.getEstado());
-        ArgumentCaptor<CambioEstadoTecnica> captor = ArgumentCaptor.forClass(CambioEstadoTecnica.class);
+
+        ArgumentCaptor<CambioEstadoTecnica> captor =
+                ArgumentCaptor.forClass(CambioEstadoTecnica.class);
+
         verify(cambios).save(captor.capture());
-        assertEquals(EstadoTecnica.PENDIENTE, captor.getValue().getEstadoAnterior());
+
+        assertEquals(EstadoTecnica.PENDIENTE,
+                captor.getValue().getEstadoAnterior());
         assertEquals("dev", captor.getValue().getAutor());
+
         verifyNoInteractions(almacen);
     }
 
     @Test
     @DisplayName("'Aplicado' con archivo: se almacena el archivo y se vincula a la técnica")
     void aplicaConArchivo() {
-        when(tecnicas.findById(5L)).thenReturn(Optional.of(tecnica));
-        when(almacen.guardar("acta.pdf", CONTENIDO)).thenReturn("clave-uuid.pdf");
+        when(tecnicas.findById(5L))
+                .thenReturn(Optional.of(tecnica));
 
-        servicio.actualizarEstado(5L, EstadoTecnica.APLICADO, null, new ArchivoAdjunto("acta.pdf", CONTENIDO), "sqa");
+        when(almacen.guardar("acta.pdf", CONTENIDO))
+                .thenReturn("clave-uuid.pdf");
 
-        assertEquals("clave-uuid.pdf", tecnica.getEvidencia().getArchivoClave());
-        assertEquals("acta.pdf", tecnica.getEvidencia().getArchivoNombre());
+        servicio.actualizarEstado(
+                5L,
+                EstadoTecnica.APLICADO,
+                null,
+                new ArchivoAdjunto("acta.pdf", CONTENIDO),
+                "sqa"
+        );
+
+        assertEquals(
+                "clave-uuid.pdf",
+                tecnica.getEvidencia().getArchivoClave()
+        );
+
+        assertEquals(
+                "acta.pdf",
+                tecnica.getEvidencia().getArchivoNombre()
+        );
+
         verify(cambios).save(any(CambioEstadoTecnica.class));
     }
 
     @Test
     @DisplayName("Una URL inválida se rechaza antes de guardar cualquier archivo")
     void urlInvalidaNoGuardaArchivo() {
-        when(tecnicas.findById(5L)).thenReturn(Optional.of(tecnica));
+        when(tecnicas.findById(5L))
+                .thenReturn(Optional.of(tecnica));
 
-        assertThrows(EvidenciaInvalidaException.class, () -> servicio.actualizarEstado(5L, EstadoTecnica.EN_PROGRESO,
-                "no-es-url", new ArchivoAdjunto("acta.pdf", CONTENIDO), "dev"));
+        assertThrows(
+                EvidenciaInvalidaException.class,
+                () -> servicio.actualizarEstado(
+                        5L,
+                        EstadoTecnica.EN_PROGRESO,
+                        "no-es-url",
+                        new ArchivoAdjunto("acta.pdf", CONTENIDO),
+                        "dev"
+                )
+        );
+
         verifyNoInteractions(almacen, cambios);
     }
 
     @Test
-    @DisplayName("Si falla la regla de negocio, el archivo recién guardado se elimina (sin huérfanos)")
+    @DisplayName("Si falla la regla de negocio, el archivo recién guardado se elimina")
     void compensaArchivoSiFalla() {
         proyecto.desactivar();
-        when(tecnicas.findById(5L)).thenReturn(Optional.of(tecnica));
-        when(almacen.guardar("acta.pdf", CONTENIDO)).thenReturn("clave-uuid.pdf");
 
-        assertThrows(ProyectoInactivoException.class, () -> servicio.actualizarEstado(5L, EstadoTecnica.APLICADO,
-                null, new ArchivoAdjunto("acta.pdf", CONTENIDO), "dev"));
+        when(tecnicas.findById(5L))
+                .thenReturn(Optional.of(tecnica));
+
+        when(almacen.guardar("acta.pdf", CONTENIDO))
+                .thenReturn("clave-uuid.pdf");
+
+        assertThrows(
+                ProyectoInactivoException.class,
+                () -> servicio.actualizarEstado(
+                        5L,
+                        EstadoTecnica.APLICADO,
+                        null,
+                        new ArchivoAdjunto("acta.pdf", CONTENIDO),
+                        "dev"
+                )
+        );
+
         verify(almacen).eliminar("clave-uuid.pdf");
         verify(cambios, never()).save(any());
     }
@@ -159,9 +315,16 @@ class TecnicaSqaServiceTest {
     @Test
     @DisplayName("Un archivo vacío se ignora")
     void ignoraArchivoVacio() {
-        when(tecnicas.findById(5L)).thenReturn(Optional.of(tecnica));
+        when(tecnicas.findById(5L))
+                .thenReturn(Optional.of(tecnica));
 
-        servicio.actualizarEstado(5L, EstadoTecnica.EN_PROGRESO, null, new ArchivoAdjunto("x.pdf", new byte[0]), "dev");
+        servicio.actualizarEstado(
+                5L,
+                EstadoTecnica.EN_PROGRESO,
+                null,
+                new ArchivoAdjunto("x.pdf", new byte[0]),
+                "dev"
+        );
 
         assertEquals(EstadoTecnica.EN_PROGRESO, tecnica.getEstado());
         verifyNoInteractions(almacen);
@@ -170,10 +333,22 @@ class TecnicaSqaServiceTest {
     @Test
     @DisplayName("Descarga del archivo de evidencia")
     void descargaEvidencia() {
-        when(tecnicas.findById(5L)).thenReturn(Optional.of(tecnica));
-        when(almacen.guardar("acta.pdf", CONTENIDO)).thenReturn("clave-uuid.pdf");
-        when(almacen.leer("clave-uuid.pdf")).thenReturn(CONTENIDO);
-        servicio.actualizarEstado(5L, EstadoTecnica.APLICADO, null, new ArchivoAdjunto("acta.pdf", CONTENIDO), "sqa");
+        when(tecnicas.findById(5L))
+                .thenReturn(Optional.of(tecnica));
+
+        when(almacen.guardar("acta.pdf", CONTENIDO))
+                .thenReturn("clave-uuid.pdf");
+
+        when(almacen.leer("clave-uuid.pdf"))
+                .thenReturn(CONTENIDO);
+
+        servicio.actualizarEstado(
+                5L,
+                EstadoTecnica.APLICADO,
+                null,
+                new ArchivoAdjunto("acta.pdf", CONTENIDO),
+                "sqa"
+        );
 
         ArchivoDescargable archivo = servicio.descargarEvidencia(5L);
 
@@ -184,20 +359,33 @@ class TecnicaSqaServiceTest {
     @Test
     @DisplayName("Sin archivo adjunto no hay nada que descargar")
     void descargaSinArchivo() {
-        when(tecnicas.findById(5L)).thenReturn(Optional.of(tecnica));
+        when(tecnicas.findById(5L))
+                .thenReturn(Optional.of(tecnica));
 
-        assertThrows(RecursoNoEncontradoException.class, () -> servicio.descargarEvidencia(5L));
+        assertThrows(
+                RecursoNoEncontradoException.class,
+                () -> servicio.descargarEvidencia(5L)
+        );
     }
 
     @Test
     @DisplayName("Consultas: listado, historial y técnica inexistente")
     void consultas() {
-        when(tecnicas.findByProyectoIdOrderByIdAsc(1L)).thenReturn(List.of(tecnica));
-        when(cambios.findByTecnicaIdOrderByRegistradoEnAscIdAsc(5L)).thenReturn(List.of());
-        when(tecnicas.findById(6L)).thenReturn(Optional.empty());
+        when(tecnicas.findByProyectoIdOrderByIdAsc(1L))
+                .thenReturn(List.of(tecnica));
+
+        when(cambios.findByTecnicaIdOrderByRegistradoEnAscIdAsc(5L))
+                .thenReturn(List.of());
+
+        when(tecnicas.findById(6L))
+                .thenReturn(Optional.empty());
 
         assertEquals(1, servicio.listarPorProyecto(1L).size());
         assertEquals(0, servicio.historial(5L).size());
-        assertThrows(RecursoNoEncontradoException.class, () -> servicio.obtener(6L));
+
+        assertThrows(
+                RecursoNoEncontradoException.class,
+                () -> servicio.obtener(6L)
+        );
     }
 }
