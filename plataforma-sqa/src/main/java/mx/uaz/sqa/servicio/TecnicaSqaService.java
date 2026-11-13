@@ -1,8 +1,10 @@
+
 package mx.uaz.sqa.servicio;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import mx.uaz.sqa.dominio.excepcion.DatosInvalidosException;
 import mx.uaz.sqa.dominio.excepcion.RecursoNoEncontradoException;
 import mx.uaz.sqa.dominio.modelo.CambioEstadoTecnica;
 import mx.uaz.sqa.dominio.modelo.EstadoTecnica;
@@ -13,6 +15,7 @@ import mx.uaz.sqa.persistencia.AlmacenArchivos;
 import mx.uaz.sqa.persistencia.CambioEstadoTecnicaRepository;
 import mx.uaz.sqa.persistencia.ProyectoRepository;
 import mx.uaz.sqa.persistencia.TecnicaSqaRepository;
+import mx.uaz.sqa.persistencia.UsuarioRepository;
 import mx.uaz.sqa.servicio.dto.ArchivoAdjunto;
 import mx.uaz.sqa.servicio.dto.ArchivoDescargable;
 import mx.uaz.sqa.servicio.dto.DatosTecnica;
@@ -29,14 +32,17 @@ public class TecnicaSqaService {
     private final ProyectoRepository proyectos;
     private final TecnicaSqaRepository tecnicas;
     private final CambioEstadoTecnicaRepository cambios;
+    private final UsuarioRepository usuarios;
     private final AlmacenArchivos almacen;
     private final Clock reloj;
 
     public TecnicaSqaService(ProyectoRepository proyectos, TecnicaSqaRepository tecnicas,
-                             CambioEstadoTecnicaRepository cambios, AlmacenArchivos almacen, Clock reloj) {
+                             CambioEstadoTecnicaRepository cambios, UsuarioRepository usuarios,
+                             AlmacenArchivos almacen, Clock reloj) {
         this.proyectos = proyectos;
         this.tecnicas = tecnicas;
         this.cambios = cambios;
+        this.usuarios = usuarios;
         this.almacen = almacen;
         this.reloj = reloj;
     }
@@ -57,14 +63,34 @@ public class TecnicaSqaService {
         return cambios.findByTecnicaIdOrderByRegistradoEnAscIdAsc(tecnicaId);
     }
 
-    /** RS-06: asigna una técnica al proyecto en estado Pendiente y deja registro de auditoría. */
+    /**
+     * RS-06: asigna una técnica al proyecto en estado Pendiente.
+     * Valida que el responsable exista y registra la asignación en la bitácora.
+     */
     public TecnicaSqa asignar(Long proyectoId, DatosTecnica datos, String autor) {
         Proyecto proyecto = proyectos.findById(proyectoId)
                 .orElseThrow(() -> RecursoNoEncontradoException.de("el proyecto", proyectoId));
+
         proyecto.verificarActivo();
-        TecnicaSqa tecnica = tecnicas.save(new TecnicaSqa(proyecto, datos.nombre(), datos.categoria(),
-                datos.descripcion(), datos.responsable()));
+
+        // Issue #4: validar la existencia del responsable antes de guardar.
+        if (usuarios.findByUsername(datos.responsable()).isEmpty()) {
+            throw new DatosInvalidosException(
+                    "El responsable seleccionado no existe en el sistema",
+                    "responsable"
+            );
+        }
+
+        TecnicaSqa tecnica = tecnicas.save(new TecnicaSqa(
+                proyecto,
+                datos.nombre(),
+                datos.categoria(),
+                datos.descripcion(),
+                datos.responsable()
+        ));
+
         cambios.save(tecnica.registrarAsignacion(autor, LocalDateTime.now(reloj)));
+
         return tecnica;
     }
 
@@ -77,13 +103,16 @@ public class TecnicaSqaService {
         TecnicaSqa tecnica = obtener(tecnicaId);
         Evidencia evidenciaNueva = Evidencia.deUrl(urlEvidencia);
         String claveGuardada = null;
+
         if (archivo != null && !archivo.estaVacio()) {
             claveGuardada = almacen.guardar(archivo.nombreOriginal(), archivo.contenido());
             evidenciaNueva = evidenciaNueva.conArchivo(claveGuardada, archivo.nombreOriginal());
         }
+
         try {
-            CambioEstadoTecnica cambio = tecnica.cambiarEstado(nuevoEstado, evidenciaNueva, autor,
-                    LocalDateTime.now(reloj));
+            CambioEstadoTecnica cambio = tecnica.cambiarEstado(
+                    nuevoEstado, evidenciaNueva, autor, LocalDateTime.now(reloj)
+            );
             cambios.save(cambio);
             return tecnica;
         } catch (RuntimeException e) {
@@ -98,9 +127,16 @@ public class TecnicaSqaService {
     public ArchivoDescargable descargarEvidencia(Long tecnicaId) {
         TecnicaSqa tecnica = obtener(tecnicaId);
         Evidencia evidencia = tecnica.getEvidencia();
+
         if (!evidencia.tieneArchivo()) {
-            throw new RecursoNoEncontradoException("La técnica no tiene un archivo de evidencia adjunto");
+            throw new RecursoNoEncontradoException(
+                    "La técnica no tiene un archivo de evidencia adjunto"
+            );
         }
-        return new ArchivoDescargable(evidencia.getArchivoNombre(), almacen.leer(evidencia.getArchivoClave()));
+
+        return new ArchivoDescargable(
+                evidencia.getArchivoNombre(),
+                almacen.leer(evidencia.getArchivoClave())
+        );
     }
 }
